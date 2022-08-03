@@ -90,6 +90,9 @@ class SyncTimings extends Command
         parent::__construct();
     }
 
+    // TODO: Add time rounding
+    // TODO: Add sync to those time entries, which already exist in invoice ninja
+    // TODO: Add since - until functionality for time entry snyc
     /**
      * Configure the command
      */
@@ -109,10 +112,7 @@ class SyncTimings extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $roundArg = $input->getArgument('round');
-        if(isset($roundArg) && is_int($roundArg)){
-            $this->roundingMinutes = $roundArg;
-        } 
+        $this->setArguments($input);
 
         $this->io = new SymfonyStyle($input, $output);
         $workspaces = $this->togglClient->getWorkspaces();
@@ -148,6 +148,20 @@ class SyncTimings extends Command
                 }
             }
         }
+    }
+
+    /**
+     * Sets console arguments
+     *
+     * @param InputInterface $input Argument enclosing object
+     * @return void
+     **/
+    private function setArguments(InputInterface $input)
+    {
+        $roundArg = $input->getArgument('round');
+        if(isset($roundArg) && is_int($roundArg)){
+            $this->roundingMinutes = $roundArg;
+        } 
     }
 
     /**

@@ -31,6 +31,9 @@
         "leanphp/phpspec-code-coverage": "^4.0"
     },
     "config": {
-        "bin-dir": "bin"
+        "bin-dir": "bin",
+        "allow-plugins": {
+            "kylekatarnls/update-helper": true
+        }
     }
 }
