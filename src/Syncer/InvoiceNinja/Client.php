@@ -55,10 +55,11 @@ class Client
         $data = $this->serializer->serialize($task, 'json');
 
         $res = $this->client->request('POST', self::VERSION . '/tasks', [
+            'allow_redirects' => ['strict'=>true],
             'body' => $data,
             'headers' => [
                 'Content-Type' => 'application/json',
-                'X-Ninja-Token' => $this->api_token,
+                'X-API-Token' => $this->api_token,
                 'X-Requested-With' => 'XMLHttpRequest',
             ]
         ]);

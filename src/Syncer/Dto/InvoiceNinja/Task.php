@@ -21,7 +21,7 @@ class Task
     private $timeLog;
 
     /**
-     * @var integer
+     * @var string
      */
     private $clientId;
 
@@ -60,7 +60,7 @@ class Task
     /**
      * @return int
      */
-    public function getClientId(): int
+    public function getClientId(): string
     {
         return $this->clientId;
     }
@@ -68,7 +68,7 @@ class Task
     /**
      * @param int $clientId
      */
-    public function setClientId(int $clientId)
+    public function setClientId(string $clientId)
     {
         $this->clientId = $clientId;
     }
