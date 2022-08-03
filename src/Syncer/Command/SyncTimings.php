@@ -12,6 +12,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Console\Input\InputArgument;
 
 /**
  * Class SyncTimings
@@ -51,6 +52,17 @@ class SyncTimings extends Command
      */
     private $projects;
 
+    /** 
+     * @var int $roundingMinutes 
+     * 
+     * Says up to how many minutes the duration of one time log 
+     * should be rounded and end time adapted for it to fit.
+     * 
+     * default = 0 <=> disabled
+     *
+     * */
+    private $roundingMinutes = 0;
+
     /**
      * SyncTimings constructor.
      *
@@ -65,13 +77,15 @@ class SyncTimings extends Command
         ReportsClient $reportsClient,
         InvoiceNinjaClient $invoiceNinjaClient,
         $clients,
-        $projects
+        $projects,
+        $roundtimings
     ) {
         $this->togglClient = $togglClient;
         $this->reportsClient = $reportsClient;
         $this->invoiceNinjaClient = $invoiceNinjaClient;
         $this->clients = $clients;
         $this->projects = $projects;
+        $this->roundingMinutes = $roundtimings;
 
         parent::__construct();
     }
@@ -84,6 +98,9 @@ class SyncTimings extends Command
         $this
             ->setName('sync:timings')
             ->setDescription('Syncs timings from toggl to invoiceninja')
+            ->addArgument('since', InputArgument::OPTIONAL, 'NO FUNCTION -- Date from which timings get synced')
+            ->addArgument('until', InputArgument::OPTIONAL, 'NO FUNCTION -- Date to which timings get synced (including)')
+            ->addArgument('round', InputArgument::OPTIONAL, 'Minutes a time log\'s duration is rounded to and the end time is be adaptet to')
         ;
     }
 
@@ -92,6 +109,11 @@ class SyncTimings extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $roundArg = $input->getArgument('round');
+        if(isset($roundArg) && is_int($roundArg)){
+            $this->roundingMinutes = $roundArg;
+        } 
+
         $this->io = new SymfonyStyle($input, $output);
         $workspaces = $this->togglClient->getWorkspaces();
 

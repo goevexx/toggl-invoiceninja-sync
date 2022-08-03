@@ -4,19 +4,23 @@ parameters:
     serializer.cache_dir: '%kernel.root_dir%/cache'
 
     toggl.api_key: KEY
-    toggl.toggl_base_uri: https://www.toggl.com/api/
-    toggl.reports_base_uri: https://www.toggl.com/reports/api/
+    toggl.toggl_base_uri: https://api.track.toggl.com/api/
+    toggl.reports_base_uri: https://api.track.toggl.com/reports/api/
+    toggl.timings.round: true
 
-    invoice_ninja.base_uri: http://invoiceninja.dev/api/
+    invoice_ninja.base_uri: https://invoicing.co/api/
     invoice_ninja.api_key: KEY
 
     # Key = name in toggl (Has to be correct)
     # Value = client id from invoiceninja
     clients:
-         client_name: 1
+         client_name: abc1
 
     # Key = name in toggl
     # Value= id from invoiceninja
     projects:
-         first_project: 1
-         second_project: 2
+         first_project: abc12
+         second_project: abc123
+
+    
+    time_entry.round.minutes: 0

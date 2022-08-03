@@ -23,6 +23,7 @@ services:
             - '@invoice_ninja.client'
             - '%clients%'
             - '%projects%'
+            - '%time_entry.round.minutes%'
 
     toggl.guzzle.toggl:
         class: GuzzleHttp\Client
