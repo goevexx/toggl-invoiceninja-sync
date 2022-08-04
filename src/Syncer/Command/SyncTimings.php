@@ -13,6 +13,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputArgument;
+use DateTime;
 
 /**
  * Class SyncTimings
@@ -90,7 +91,6 @@ class SyncTimings extends Command
         parent::__construct();
     }
 
-    // TODO: Add time rounding
     // TODO: Add sync to those time entries, which already exist in invoice ninja
     // TODO: Add since - until functionality for time entry snyc
     /**
@@ -223,11 +223,77 @@ class SyncTimings extends Command
      */
     private function buildTimeLog(TimeEntry $entry): string
     {
+        $start = $entry->getStart();
+        $end = $this->maybeExtendDuration($entry->getStart(), $entry->getEnd());
+
         $timeLog = [[
-            $entry->getStart()->getTimestamp(),
-            $entry->getEnd()->getTimestamp(),
+            $start,
+            $end,
         ]];
 
         return \GuzzleHttp\json_encode($timeLog);
+    }
+
+    /**
+     * Extends duration to a multiple of $roundingMinutes
+     * 
+     * Rounds duration between $start and $end up to $roundingMinutes 
+     * and returns $start including the rounded duration added
+     *
+     * @param DateTime $start Duration start time
+     * @param DateTime $end Duration end time
+     * @return DateTime $start + rounded duration
+     **/
+    public function maybeExtendDuration(DateTime $start, DateTime $end): DateTime
+    {
+        $duration  = $start->diff($end);
+        if ($this->roundingMinutes !== 0){
+            $duration = $this::roundDateIntervalMinutes($duration, $this->roundingMinutes);
+        }
+        return $start->add($duration);
+    }
+
+    /**
+     * Rounds interval minutes
+     *
+     * @param \DateInterval $interval Interval to be rounded
+     * @param \DateInterval $roundToMinutes Minutes to be rounded to
+     * @return \DateInterval
+     **/
+    private static function roundDateIntervalMinutes(\DateInterval $interval, int $roundToMinutes)
+    {
+            // Take date parts off duration
+            $partialDaysStr = $interval->format('%d');
+            $partialHoursStr = $interval->format('%h');
+            $partialMinutesStr = $interval->format('%i');
+
+            $partialDays = intval($partialDaysStr);
+            $partialHours =   intval($partialHoursStr);
+            $partialMinutes = intval($partialMinutesStr);
+
+            // Round minutes
+            $minutes = $partialDays * 24 * 60 + $partialHours * 60 + $partialMinutes;
+            $roundedMinutes = ceil($minutes / $roundToMinutes) * $roundToMinutes;
+
+            // Create date parts from rounded minutes
+            $roundedPartialDays = floor($roundedMinutes / 60 / 24);
+            $roundedMinutesWithoutRoundedPartialDays = $roundedMinutes - ($roundedPartialDays * 24 * 60);
+            $roundedPartialHours = floor(($roundedMinutesWithoutRoundedPartialDays) / 60);
+            $roundedPartialMinutes = $roundedMinutes - ($roundedPartialHours * 60);
+
+            // Merge date parts
+            $intervalFormat = 'PT';
+            if($roundedPartialDays != 0){
+                $intervalFormat .= $roundedPartialDays.'D';
+            }
+            if($roundedPartialHours != 0){
+                $intervalFormat .= $roundedPartialHours.'H';
+            }
+            if($roundedPartialMinutes != 0){
+                $intervalFormat .= $roundedPartialMinutes.'M';
+            }
+            $roundedDuration = new \DateInterval($intervalFormat);
+
+            return $roundedDuration;
     }
 }
