@@ -5,6 +5,8 @@ namespace Syncer\Toggl;
 use GuzzleHttp\Client;
 use JMS\Serializer\SerializerInterface;
 use Syncer\Dto\Toggl\Workspace;
+use Syncer\Dto\Toggl\TimeEntry;
+use Syncer\Dto\Toggl\PutTimeEntryResponse;
 
 /**
  * Class TogglClient
@@ -54,5 +56,26 @@ class TogglClient
         ]);
 
         return $this->serializer->deserialize($response->getBody(), 'array<Syncer\Dto\Toggl\Workspace>', 'json');
+    }
+
+    /**
+     * Updates time entry
+     *
+     *
+     * @param TimeEntry $entry 
+     * @return TimeEntry
+     **/
+    public function updateTimeEntry(TimeEntry $entry): TimeEntry
+    {
+        $data = $this->serializer->serialize($entry, 'json');
+        
+        $response = $this->client->request('PUT', self::VERSION . '/time_entries/' . $entry->getId(), [
+            'auth' => [$this->api_key, 'api_token'],
+            'body' => '{"time_entry": ' . $data . '}'
+        ]);
+
+        $putTimeEntryResponse = $this->serializer->deserialize($response->getBody(), PutTimeEntryResponse::class, 'json');
+        return $putTimeEntryResponse->getData();
+    
     }
 }

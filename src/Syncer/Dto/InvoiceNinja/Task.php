@@ -10,6 +10,9 @@ namespace Syncer\Dto\InvoiceNinja;
  */
 class Task
 {
+    /** @var string $id  */
+    private $id;
+
     /**
      * @var string
      */
@@ -24,6 +27,12 @@ class Task
      * @var string
      */
     private $clientId;
+
+    /** @var string $projectId */
+    private $projectId;
+
+    /** @var int $togglId */
+    private $togglId;
 
     /**
      * @return string
@@ -72,4 +81,75 @@ class Task
     {
         $this->clientId = $clientId;
     }
+	/**
+	 * 
+	 * @return string
+	 */
+	function getProjectId() {
+		return $this->projectId;
+	}
+	
+	/**
+	 * 
+	 * @param string $projectId 
+	 * @return Task
+	 */
+	function setProjectId($projectId): self {
+		$this->projectId = $projectId;
+		return $this;
+	}
+
+	/**
+	 * 
+	 * @return int
+	 */
+	function getTogglId() {
+		return $this->togglId;
+	}
+	
+	/**
+	 * 
+	 * @param int $togglId 
+	 * @return Task
+	 */
+	function setTogglId($togglId): self {
+		$this->togglId = $togglId;
+		return $this;
+	}
+
+
+	/**
+	 * 
+	 * @return string
+	 */
+	function getTogglIdStr() {
+		return "$this->togglId";
+	}
+	
+	/**
+	 * 
+	 * @param string $togglId 
+	 * @return Task
+	 */
+	function setTogglIdStr($togglId): self {
+		$this->togglId = intval($togglId);
+		return $this;
+	}
+	/**
+	 * 
+	 * @return string
+	 */
+	function getId() {
+		return $this->id;
+	}
+	
+	/**
+	 * 
+	 * @param string $id 
+	 * @return Task
+	 */
+	function setId($id): self {
+		$this->id = $id;
+		return $this;
+	}
 }

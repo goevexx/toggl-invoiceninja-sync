@@ -3,21 +3,21 @@ Syncer\Dto\Toggl\DetailedReport:
     properties:
         totalGrand:
             type: integer
-            serializedName: total_grand
+            serialized_name: total_grand
             exclude: false
         totalBillable:
             type: integer
-            serializedName: total_billable
+            serialized_name: total_billable
             exclude: false
         totalCount:
             type: integer
-            serializedName: total_count
+            serialized_name: total_count
             exclude: false
         perPage:
             type: integer
-            serializedName: per_page
+            serialized_name: per_page
             exlude: false
         data:
             type: array<Syncer\Dto\Toggl\TimeEntry>
-            serializedName: data
+            serialized_name: data
             exclude: false

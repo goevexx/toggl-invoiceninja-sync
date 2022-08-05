@@ -1,14 +1,31 @@
 Syncer\Dto\InvoiceNinja\Task:
     exclusion_policy: ALL
     properties:
+        id:
+            type: string
+            exclude: false
+            serialized_name: id
         description:
             type: string
             exclude: false
+            serialized_name: description
         timeLog:
             type: string
             exclude: false
-            serializedName: time_log
+            serialized_name: time_log
         clientId:
             type: string
             exclude: false
-            serializedName: client_id
+            serialized_name: client_id
+        projectId:
+            type: string
+            exclude: false
+            serialized_name: project_id
+        togglId:
+            type: string
+            exclude: false
+            serialized_name: custom_value1
+            accessor_type: public_method
+            accessor:
+                getter: getTogglIdStr
+                setter: setTogglIdStr

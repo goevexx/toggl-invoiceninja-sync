@@ -24,6 +24,7 @@ services:
             - '%clients%'
             - '%projects%'
             - '%time.round.minutes%'
+            - '%toggl.billable_only%'
 
     toggl.guzzle.toggl:
         class: GuzzleHttp\Client

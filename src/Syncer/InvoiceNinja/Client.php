@@ -5,6 +5,7 @@ namespace Syncer\InvoiceNinja;
 use GuzzleHttp\Client as GuzzleClient;
 use JMS\Serializer\SerializerInterface;
 use Syncer\Dto\InvoiceNinja\Task;
+use Syncer\Dto\InvoiceNinja\PostTaskResponse;
 
 /**
  * Class Client
@@ -48,13 +49,13 @@ class Client
     /**
      * @param Task $task
      *
-     * @return mixed
+     * @return Task
      */
     public function saveNewTask(Task $task)
     {
         $data = $this->serializer->serialize($task, 'json');
 
-        $res = $this->client->request('POST', self::VERSION . '/tasks', [
+        $response = $this->client->request('POST', self::VERSION . '/tasks', [
             'allow_redirects' => ['strict'=>true],
             'body' => $data,
             'headers' => [
@@ -64,6 +65,8 @@ class Client
             ]
         ]);
 
-        return $this->serializer->deserialize($res->getBody(), Task::class, 'json');
+        $responseBody = $response->getBody();
+        $postTaskResponse = $this->serializer->deserialize($responseBody, PostTaskResponse::class, 'json');
+        return $postTaskResponse->getData();
     }
 }

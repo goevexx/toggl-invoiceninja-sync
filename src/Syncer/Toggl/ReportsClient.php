@@ -53,7 +53,7 @@ class ReportsClient
      */
     public function getDetailedReport(int $workspaceId)
     {
-        $res = $this->client->request('GET', self::VERSION . '/details', [
+        $response = $this->client->request('GET', self::VERSION . '/details', [
             'auth' => [$this->api_key, 'api_token'],
             'query' => [
                 'user_agent' => 'matthieu@calie.be',
@@ -62,6 +62,8 @@ class ReportsClient
             ]
         ]);
 
-        return $this->serializer->deserialize($res->getBody(), DetailedReport::class, 'json');
+        $responseBody = $response->getBody();
+        $detailedResponse = $this->serializer->deserialize($responseBody, DetailedReport::class, 'json');
+        return $detailedResponse;
     }
 }

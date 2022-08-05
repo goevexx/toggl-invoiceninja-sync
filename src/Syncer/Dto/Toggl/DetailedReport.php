@@ -31,7 +31,7 @@ class DetailedReport
     private $perPage;
 
     /**
-     * @var array
+     * @var TimeEntry[]
      */
     private $data;
 

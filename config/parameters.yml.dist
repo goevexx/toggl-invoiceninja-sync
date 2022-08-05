@@ -23,4 +23,5 @@ parameters:
          second_project: abc123
 
     
-    time_entry.round.minutes: 0
+    time.round.minutes: 0
+    toggl.billable_only: true

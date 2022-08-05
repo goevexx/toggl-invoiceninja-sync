@@ -13,7 +13,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputArgument;
-use DateTime;
+use Symfony\Component\Console\Input\InputOption;
+
+define('INVOICENINJA_REF_LABEL', 'IN Task: ');
 
 /**
  * Class SyncTimings
@@ -64,6 +66,9 @@ class SyncTimings extends Command
      * */
     private $roundingMinutes = 0;
 
+    /** @var bool $billableOnly Whether only billable entries should be logged */
+    private $billableOnly;  
+
     /**
      * SyncTimings constructor.
      *
@@ -79,7 +84,8 @@ class SyncTimings extends Command
         InvoiceNinjaClient $invoiceNinjaClient,
         $clients,
         $projects,
-        $roundtimings
+        $roundtimings,
+        $billableOnly
     ) {
         $this->togglClient = $togglClient;
         $this->reportsClient = $reportsClient;
@@ -87,11 +93,12 @@ class SyncTimings extends Command
         $this->clients = $clients;
         $this->projects = $projects;
         $this->roundingMinutes = $roundtimings;
+        $this->billableOnly = $billableOnly;
 
         parent::__construct();
     }
 
-    // TODO: Add sync to those time entries, which already exist in invoice ninja
+    // TODO: Add Logging
     // TODO: Add since - until functionality for time entry snyc
     /**
      * Configure the command
@@ -101,9 +108,10 @@ class SyncTimings extends Command
         $this
             ->setName('sync:timings')
             ->setDescription('Syncs timings from toggl to invoiceninja')
-            ->addArgument('since', InputArgument::OPTIONAL, 'NO FUNCTION -- Date from which timings get synced')
-            ->addArgument('until', InputArgument::OPTIONAL, 'NO FUNCTION -- Date to which timings get synced (including)')
-            ->addArgument('round', InputArgument::OPTIONAL, 'Minutes a time log\'s duration is rounded to and the end time is be adaptet to')
+            // ->addOption('since', 's', InputOption::VALUE_OPTIONAL, 'NO FUNCTION -- Date from which timings get synced')
+            // ->addOption('until', 'u', InputOption::VALUE_OPTIONAL, 'NO FUNCTION -- Date to which timings get synced (including)')
+            // ->addOption('round', 'r', InputOption::VALUE_OPTIONAL, 'Minutes a time log\'s duration is rounded to and the end time is be adaptet to')
+            // ->addOption('billable-only', 'b', InputOption::VALUE_OPTIONAL, 'Transfer only billable timelogs')
         ;
     }
 
@@ -112,42 +120,82 @@ class SyncTimings extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->setArguments($input);
-
         $this->io = new SymfonyStyle($input, $output);
+        
+        // $this->setArguments($input);
+
+        $workspaces = $this->getWorkspacesOrExit();
+
+        foreach ($workspaces as $workspace) {
+            $detailedReport = $this->reportsClient->getDetailedReport($workspace->getId());
+
+            $timeEntries = $detailedReport->getData();
+            $logFilteredTimeEntries = $this->filterNotYetLoggedTimeEntries($timeEntries);
+
+            foreach($logFilteredTimeEntries as $timeEntry) {
+                if(!$this->billableOnly | ($this->billableOnly && $timeEntry->isBillable())){
+                    $timeEntrySent = false;
+
+                    // Log the entry if the client key exists
+                    if ($this->timeEntryCanBeLoggedByConfig($this->clients, $timeEntry->getClient(), $timeEntrySent)) {
+                        $this->logTask($timeEntry);
+
+                        $timeEntrySent = true;
+                    }
+
+                    // Log the entry if the project key exists
+                    if ($this->timeEntryCanBeLoggedByConfig($this->projects, $timeEntry->getProject(), $timeEntrySent)) {
+                        $this->logTask($timeEntry);
+
+                        $timeEntrySent = true;
+                    }
+
+                    if ($timeEntrySent) {
+                        $this->io->success('TimeEntry ('. $timeEntry->getDescription() . ') sent to InvoiceNinja');
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Filters not yet logged time entries
+     *
+     * Searches time entry's tags for invoice ninja task id 
+     *
+     * @param TimeEntry[] $entries 
+     * @return TimeEntry[]
+     **/
+    public function filterNotYetLoggedTimeEntries(array $entries): array
+    {
+        $filteredEntries = array_filter($entries, function(TimeEntry $entry){
+            $invoiceNinjaTaskPattern = '/^'.INVOICENINJA_REF_LABEL.'(\w+)$/';
+            $invoiceNinjaTaskTags = preg_grep($invoiceNinjaTaskPattern, $entry->getTags());
+            if(count($invoiceNinjaTaskTags) > 0){
+                return false;
+            }
+            return true;
+        });
+        return $filteredEntries;
+    }
+
+    /**
+     * Gets workspaces or else exits
+     *
+     * @return \Syncer\Dto\Toggl\Workspace[]
+     **/
+    public function getWorkspacesOrExit(): array
+    {
         $workspaces = $this->togglClient->getWorkspaces();
 
         if (!is_array($workspaces) || count($workspaces) === 0) {
             $this->io->error('No workspaces to sync.');
 
-            return;
+            exit(1);
         }
 
-        foreach ($workspaces as $workspace) {
-            $detailedReport = $this->reportsClient->getDetailedReport($workspace->getId());
-
-            foreach($detailedReport->getData() as $timeEntry) {
-                $timeEntrySent = false;
-
-                // Log the entry if the client key exists
-                if ($this->timeEntryCanBeLoggedByConfig($this->clients, $timeEntry->getClient(), $timeEntrySent)) {
-                    $this->logTask($timeEntry, $this->clients, $timeEntry->getClient());
-
-                    $timeEntrySent = true;
-                }
-
-                // Log the entry if the project key exists
-                if ($this->timeEntryCanBeLoggedByConfig($this->projects, $timeEntry->getProject(), $timeEntrySent)) {
-                    $this->logTask($timeEntry, $this->projects, $timeEntry->getProject());
-
-                    $timeEntrySent = true;
-                }
-
-                if ($timeEntrySent) {
-                    $this->io->success('TimeEntry ('. $timeEntry->getDescription() . ') sent to InvoiceNinja');
-                }
-            }
-        }
+        return $workspaces;
     }
 
     /**
@@ -161,6 +209,12 @@ class SyncTimings extends Command
         $roundArg = $input->getArgument('round');
         if(isset($roundArg) && is_int($roundArg)){
             $this->roundingMinutes = $roundArg;
+        } 
+
+
+        $billArg = $input->getArgument('billable-only');
+        if(isset($billArg)){
+            $this->billableOnly = $billArg;
         } 
     }
 
@@ -181,21 +235,55 @@ class SyncTimings extends Command
     }
 
     /**
+     * Logs task and refs time entry
+     * 
      * @param TimeEntry $entry
-     * @param array $config
-     * @param string $key
      *
-     * @return void
      */
-    private function logTask(TimeEntry $entry, array $config, string $key)
+    private function logTask(TimeEntry $entry)
+    {
+        $task = $this->createTask($entry);
+        $this->refTimeEntry($entry, $task);
+    }
+
+    /**
+     * Refs time entry to task
+     *
+     * Adds Task to time entry with given task id
+     *
+     * @param TimeEntry $entry
+     * @param Task $task
+     * 
+     * @return TimeEntry
+     **/
+    public function refTimeEntry(TimeEntry $entry, Task $task): TimeEntry
+    {
+        $tags = $entry->getTags();
+        array_push($tags, INVOICENINJA_REF_LABEL . $task->getId());
+        $newEntry = new TimeEntry();
+        $newEntry->setId($entry->getId());
+        $newEntry->setTags($tags);
+
+        return $this->togglClient->updateTimeEntry($newEntry);
+    }
+
+        /**
+     * @param TimeEntry $entry
+     *
+     * @return Task
+     */
+    private function createTask(TimeEntry $entry): Task
     {
         $task = new Task();
 
         $task->setDescription($this->buildTaskDescription($entry));
         $task->setTimeLog($this->buildTimeLog($entry));
-        $task->setClientId($config[$key]);
+        $task->setClientId($this->clients[$entry->getClient()]);
+        $task->setProjectId($this->projects[$entry->getProject()]);
+        $task->setTogglId($entry->getId());
 
-        $this->invoiceNinjaClient->saveNewTask($task);
+        $newTask = $this->invoiceNinjaClient->saveNewTask($task);
+        return $newTask;
     }
 
     /**
@@ -205,13 +293,8 @@ class SyncTimings extends Command
      */
     private function buildTaskDescription(TimeEntry $entry): string
     {
-        $description = '';
 
-        if ($entry->getProject()) {
-            $description .= $entry->getProject() . ': ';
-        }
-
-        $description .= $entry->getDescription();
+        $description = $entry->getDescription();
 
         return $description;
     }
@@ -224,11 +307,11 @@ class SyncTimings extends Command
     private function buildTimeLog(TimeEntry $entry): string
     {
         $start = $entry->getStart();
-        $end = $this->maybeExtendDuration($entry->getStart(), $entry->getEnd());
+        $end = $this->maybeExtendDuration($start, $entry->getEnd());
 
         $timeLog = [[
-            $start,
-            $end,
+            $start->getTimestamp(),
+            $end->getTimestamp(),
         ]];
 
         return \GuzzleHttp\json_encode($timeLog);
@@ -240,17 +323,18 @@ class SyncTimings extends Command
      * Rounds duration between $start and $end up to $roundingMinutes 
      * and returns $start including the rounded duration added
      *
-     * @param DateTime $start Duration start time
-     * @param DateTime $end Duration end time
-     * @return DateTime $start + rounded duration
+     * @param \DateTime $start Duration start time
+     * @param \DateTime $end Duration end time
+     * @return \DateTime $start + rounded duration
      **/
-    public function maybeExtendDuration(DateTime $start, DateTime $end): DateTime
+    public function maybeExtendDuration(\DateTime $start, \DateTime $end): \DateTime
     {
-        $duration  = $start->diff($end);
+        $startClone = clone $start;
+        $duration  = $startClone->diff($end);
         if ($this->roundingMinutes !== 0){
             $duration = $this::roundDateIntervalMinutes($duration, $this->roundingMinutes);
         }
-        return $start->add($duration);
+        return $startClone->add($duration);
     }
 
     /**
