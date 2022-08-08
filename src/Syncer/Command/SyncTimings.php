@@ -14,6 +14,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use DateTimeZone;
+use DateTime;
+
+define('OPTION_SINCE', 'since');
+define('OPTION_SINCE_SHORT', 's');
+define('OPTION_UNTIL', 'until');
+define('OPTION_UNTIL_SHORT', 'u');
+define('OPTION_BILLABLE', 'billable-only');
+define('OPTION_BILLABLE_SHORT', 'b');
+define('OPTION_ROUND', 'round');
+define('OPTION_ROUND_SHORT', 'r');
+
+define('TIMEZONE', 'Europe/Berlin');
 
 define('INVOICENINJA_REF_LABEL', 'IN Task: ');
 
@@ -69,6 +82,12 @@ class SyncTimings extends Command
     /** @var bool $billableOnly Whether only billable entries should be logged */
     private $billableOnly;  
 
+    /** @var \DateTime $since Since when time entries got to be synced */
+    protected $since;
+
+    /** @var \DateTime $until Until when time entries got to be synced */
+    protected $until;
+
     /**
      * SyncTimings constructor.
      *
@@ -99,19 +118,21 @@ class SyncTimings extends Command
     }
 
     // TODO: Add Logging
-    // TODO: Add since - until functionality for time entry snyc
     /**
      * Configure the command
      */
     protected function configure()
     {
+        $timezone = new DateTimeZone(TIMEZONE);
+        $date7daysAgo = (new DateTime('7 days ago', $timezone));
+        $dateNow = (new DateTime('now', $timezone));
         $this
             ->setName('sync:timings')
             ->setDescription('Syncs timings from toggl to invoiceninja')
-            // ->addOption('since', 's', InputOption::VALUE_OPTIONAL, 'NO FUNCTION -- Date from which timings get synced')
-            // ->addOption('until', 'u', InputOption::VALUE_OPTIONAL, 'NO FUNCTION -- Date to which timings get synced (including)')
-            // ->addOption('round', 'r', InputOption::VALUE_OPTIONAL, 'Minutes a time log\'s duration is rounded to and the end time is be adaptet to')
-            // ->addOption('billable-only', 'b', InputOption::VALUE_OPTIONAL, 'Transfer only billable timelogs')
+            ->addOption(OPTION_SINCE, OPTION_SINCE_SHORT, InputOption::VALUE_REQUIRED, 'Date from which timings get synced (See https://www.php.net/manual/de/datetime.formats.date.php)', $date7daysAgo->format(\DateTimeInterface::W3C))
+            ->addOption(OPTION_UNTIL, OPTION_UNTIL_SHORT, InputOption::VALUE_REQUIRED, 'Date to which timings get synced (including this day) (See https://www.php.net/manual/de/datetime.formats.date.php)', $dateNow->format(\DateTimeInterface::W3C))
+            ->addOption(OPTION_ROUND, OPTION_ROUND_SHORT, InputOption::VALUE_OPTIONAL, 'Minutes a time log\'s duration is rounded to and the end time is be adaptet to')
+            ->addOption(OPTION_BILLABLE, OPTION_BILLABLE_SHORT, InputOption::VALUE_OPTIONAL, 'Transfer only billable timelogs')
         ;
     }
 
@@ -122,12 +143,12 @@ class SyncTimings extends Command
     {
         $this->io = new SymfonyStyle($input, $output);
         
-        // $this->setArguments($input);
+        $this->getOptions($input);
 
         $workspaces = $this->getWorkspacesOrExit();
 
         foreach ($workspaces as $workspace) {
-            $detailedReport = $this->reportsClient->getDetailedReport($workspace->getId());
+            $detailedReport = $this->reportsClient->getDetailedReport($workspace->getId(), $this->since, $this->until);
 
             $timeEntries = $detailedReport->getData();
             $logFilteredTimeEntries = $this->filterNotYetLoggedTimeEntries($timeEntries);
@@ -135,23 +156,24 @@ class SyncTimings extends Command
             foreach($logFilteredTimeEntries as $timeEntry) {
                 if(!$this->billableOnly | ($this->billableOnly && $timeEntry->isBillable())){
                     $timeEntrySent = false;
+                    $createdTask = null;
 
                     // Log the entry if the client key exists
                     if ($this->timeEntryCanBeLoggedByConfig($this->clients, $timeEntry->getClient(), $timeEntrySent)) {
-                        $this->logTask($timeEntry);
+                        $createdTask = $this->logTask($timeEntry);
 
                         $timeEntrySent = true;
                     }
 
                     // Log the entry if the project key exists
                     if ($this->timeEntryCanBeLoggedByConfig($this->projects, $timeEntry->getProject(), $timeEntrySent)) {
-                        $this->logTask($timeEntry);
+                        $createdTask = $this->logTask($timeEntry);
 
                         $timeEntrySent = true;
                     }
 
                     if ($timeEntrySent) {
-                        $this->io->success('TimeEntry ('. $timeEntry->getDescription() . ') sent to InvoiceNinja');
+                        $this->io->success('TimeEntry successfully sent to InvoiceNinja. (' . $this->buildTaskDescription($timeEntry) . ')[' . $createdTask->getId() . ']');
                     }
                 }
             }
@@ -204,17 +226,28 @@ class SyncTimings extends Command
      * @param InputInterface $input Argument enclosing object
      * @return void
      **/
-    private function setArguments(InputInterface $input)
+    private function getOptions(InputInterface $input)
     {
-        $roundArg = $input->getArgument('round');
-        if(isset($roundArg) && is_int($roundArg)){
-            $this->roundingMinutes = $roundArg;
+        $timezone = new DateTimeZone(TIMEZONE);
+
+        $sinceOption = $input->getOption('since');
+        if(isset($sinceOption) && $sinceTime = new DateTime($sinceOption, $timezone)){
+            $this->since = $sinceTime;
+        }
+
+        $untilOption = $input->getOption('until');
+        if(isset($untilOption) && $untilTime = new DateTime($untilOption, $timezone)){
+            $this->until = $untilTime;
         } 
 
+        $roundOption = $input->getOption('round');
+        if(isset($roundOption) && is_int($roundOption)){
+            $this->roundingMinutes = $roundOption;
+        } 
 
-        $billArg = $input->getArgument('billable-only');
-        if(isset($billArg)){
-            $this->billableOnly = $billArg;
+        $billOption = $input->getOption('billable-only');
+        if(isset($billOption)){
+            $this->billableOnly = $billOption;
         } 
     }
 
@@ -238,12 +271,13 @@ class SyncTimings extends Command
      * Logs task and refs time entry
      * 
      * @param TimeEntry $entry
-     *
+     * @return Task
      */
-    private function logTask(TimeEntry $entry)
+    private function logTask(TimeEntry $entry): Task
     {
         $task = $this->createTask($entry);
         $this->refTimeEntry($entry, $task);
+        return $task;
     }
 
     /**

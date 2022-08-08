@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use JMS\Serializer\SerializerInterface;
 use Syncer\Dto\Toggl\DetailedReport;
+use DateTime;
 
 /**
  * Class ReportsClient
@@ -49,16 +50,17 @@ class ReportsClient
      * Get detailed report from since yesterday
      *
      * @param int $workspaceId
-     * @return array|\JMS\Serializer\scalar|object|DetailedReport
+     * @return DetailedReport
      */
-    public function getDetailedReport(int $workspaceId)
+    public function getDetailedReport(int $workspaceId, DateTime $since, DateTime $until)
     {
         $response = $this->client->request('GET', self::VERSION . '/details', [
             'auth' => [$this->api_key, 'api_token'],
             'query' => [
-                'user_agent' => 'matthieu@calie.be',
+                'user_agent' => 'info@programmierschmiede.de',
                 'workspace_id' => $workspaceId,
-                'since' => Carbon::yesterday()->format('Y-m-d')
+                'since' => $since->format('Y-m-d'),
+                'until' => $until->format('Y-m-d')
             ]
         ]);
 

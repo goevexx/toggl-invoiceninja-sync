@@ -66,3 +66,15 @@ As this command syncs the tasks from the current day, this cronjob setting will 
 
 - Support for Invoiceninja projects (now it just links project to client as this was written when no projects existed in invoiceninja)
 - Next major release will use Symfony 4 components.
+
+## Fork Contrbution
+
+Added extra functionality to the sync:
+- Round duration of time log to variable minutes
+- Make only billable entries sync
+- Select date range to select time entries to sync
+- Sync only not yet synced time entries
+  - Adds id tag in toggl on sync
+  - Puts id in custom_value1 in invoice ninja
+   
+ See `parameters.yaml.dist` or `php syncer sync:timings --help`
