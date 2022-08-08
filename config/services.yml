@@ -10,6 +10,7 @@ services:
         class: JMS\Serializer\Serializer
         factory: 'serializer_factory:createSerializer'
 
+    # TODO: Add sync reset per time range
     syncer.application:
         class: Symfony\Component\Console\Application
         calls:
