@@ -76,7 +76,7 @@ docker pull goevexx/toggl-invoiceninja-sync
 Run it. This only works if you mount [config/parameters.yml](#configuration).
 
 ```bash
-docker run --rm --name 'tgl-in-sync' -it -v /absolute/path/to/parameters.yml:/syncer/config/parameters.yml syncer
+docker run --rm --name 'tgl-in-sync' -it -v /absolute/path/to/parameters.yml:/syncer/config/parameters.yml goevexx/toggl-invoiceninja-sync
 ```
 
 You can also cron job this execution. See [Run as cronjob](#run-as-cronjob)
