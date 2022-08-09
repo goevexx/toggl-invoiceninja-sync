@@ -24,28 +24,31 @@ Now fill in the parameters in config/parameters.yml
 ```yaml
 parameters:
     debug: false
-    serializer.config_dir: %kernel.root_dir%/config/serializer
-    seriaizer.cache_dir: %kernel.root_dir%/cache
+    serializer.config_dir: '%kernel.root_dir%/config/serializer'
+    serializer.cache_dir: '%kernel.root_dir%/cache'
 
     toggl.api_key: KEY
-    toggl.toggl_base_uri: https://www.toggl.com/api/
-    toggl.reports_base_uri: https://www.toggl.com/reports/api/
+    toggl.toggl_base_uri: https://api.track.toggl.com/api/
+    toggl.reports_base_uri: https://api.track.toggl.com/reports/api/
+    toggl.timings.round: true
 
-    invoice_ninja.base_uri: {your-invoice-ninja-url}/api/
+    invoice_ninja.base_uri: https://invoicing.co/api/
     invoice_ninja.api_key: KEY
 
     # Key = name in toggl (Has to be correct)
     # Value = client id from invoiceninja
-    # Use '[]' if you don't need any config here
     clients:
-         client_name: 1
+         client_name: abc1
 
     # Key = name in toggl
     # Value= id from invoiceninja
-    # Use '[]' if you don't need any config here
     projects:
-         first_project: 1
-         second_project: 2
+         first_project: abc12
+         second_project: abc123
+
+    
+    time.round.minutes: 0
+    toggl.billable_only: true
 ```
 
 The key-value pairs in the `clients` variable are important. The key should be the **exact** client name from toggl. The value should be the client id from invoiceninja.
