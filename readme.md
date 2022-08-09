@@ -4,17 +4,23 @@
 [![Code Coverage](https://scrutinizer-ci.com/g/Matth--/toggl-invoiceninja-sync/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/Matth--/toggl-invoiceninja-sync/?branch=master)
 
 # Invoice syncer
-This application is built to sync loggings from toggl to invoiceninja
+This application is built to sync loggings from toggl to invoiceninja.
 
 set the correct parameters in config/parameters.yml
 
-## Installation
+## Original Installation
+
+### Installation
+
+**Attention**: Your php version need to be 7.0 < *your version* < 7.4. So rather run [docker](#docker-setup).
 
 - Clone or download the repo
 - Use the latest tagged release
 - run `composer install`
+  
+### Configuration
 
-Now fill in the parameters
+Now fill in the parameters in config/parameters.yml
 ```yaml
 parameters:
     debug: false
@@ -46,7 +52,7 @@ The key-value pairs in the `clients` variable are important. The key should be t
 If the time entry was matched with the `clients` variable it skips the part where it checks the `projects` variable. This varialbe acts the same way as the `clients
  variable but instead of matching the client name, it matches the **exact** project name.
 
-## Run the command
+### Run the command
 
 to run the command just run:
 
@@ -54,7 +60,7 @@ to run the command just run:
 php syncer sync:timings
 ```
 
-## Run as cronjob
+### Run as cronjob
 
 As this command syncs the tasks from the current day, this cronjob setting will run the command daily at 23:55.
 
@@ -62,12 +68,20 @@ As this command syncs the tasks from the current day, this cronjob setting will 
 55 23 * * * /path/to/php /path/to/syncer sync:timings
 ```
 
-## Roadmap
+## Docker Setup
+Get the docker image 
+```bash
+docker pull goevexx/toggl-invoiceninja-sync
+```
+Run it. This only works if you mount [config/parameters.yml](#configuration).
 
-- Support for Invoiceninja projects (now it just links project to client as this was written when no projects existed in invoiceninja)
-- Next major release will use Symfony 4 components.
+```bash
+docker run --rm --name 'tgl-in-sync' -it -v /absolute/path/to/parameters.yml:/syncer/config/parameters.yml syncer
+```
 
-## Fork Contrbution
+You can also cron job this execution. See [Run as cronjob](#run-as-cronjob)
+
+## Fork Contribution
 
 Added extra functionality to the sync:
 - Round duration of time log to variable minutes
@@ -76,5 +90,6 @@ Added extra functionality to the sync:
 - Sync only not yet synced time entries
   - Adds id tag in toggl on sync
   - Puts id in custom_value1 in invoice ninja
+- Use docker to run
    
  See `parameters.yaml.dist` or `php syncer sync:timings --help`
