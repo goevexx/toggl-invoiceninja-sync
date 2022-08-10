@@ -34,6 +34,9 @@ class Task
     /** @var int $togglId */
     private $togglId;
 
+	/** @var string $userid  */
+	private $userId;
+
     /**
      * @return string
      */
@@ -150,6 +153,23 @@ class Task
 	 */
 	function setId($id): self {
 		$this->id = $id;
+		return $this;
+	}
+	/**
+	 * 
+	 * @return string
+	 */
+	function getUserId() {
+		return $this->userId;
+	}
+	
+	/**
+	 * 
+	 * @param string $userid 
+	 * @return Task
+	 */
+	function setUserId($userid): self {
+		$this->userId = $userid;
 		return $this;
 	}
 }

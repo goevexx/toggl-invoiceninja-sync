@@ -21,6 +21,10 @@ Syncer\Dto\InvoiceNinja\Task:
             type: string
             exclude: false
             serialized_name: project_id
+        userId:
+            type: string
+            exclude: false
+            serialized_name: user_id
         togglId:
             type: string
             exclude: false

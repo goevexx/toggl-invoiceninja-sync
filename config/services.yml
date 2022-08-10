@@ -24,6 +24,7 @@ services:
             - '@invoice_ninja.client'
             - '%clients%'
             - '%projects%'
+            - '%users%'
             - '%time.round.minutes%'
             - '%toggl.billable_only%'
 

@@ -46,6 +46,13 @@ parameters:
          first_project: abc12
          second_project: abc123
 
+    # Key = name in toggl
+    # Value= id from invoiceninja
+    users.enabled: true
+    users:
+         first_user: abc12
+         second_user: abc123
+
     
     time.round.minutes: 0
     toggl.billable_only: true
@@ -54,6 +61,8 @@ parameters:
 The key-value pairs in the `clients` variable are important. The key should be the **exact** client name from toggl. The value should be the client id from invoiceninja.
 If the time entry was matched with the `clients` variable it skips the part where it checks the `projects` variable. This varialbe acts the same way as the `clients
  variable but instead of matching the client name, it matches the **exact** project name.
+
+The key-value pairs in users are destined to choose the correct user in invoiceninja creating a task. If the user from toggl doesn't match with the corresponding userid from invoiceninja, then it will fail.  
 
 ### Run the command
 

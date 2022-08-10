@@ -69,6 +69,9 @@ class SyncTimings extends Command
      */
     private $projects;
 
+    /** @var array $users  */
+    private $users;
+
     /** 
      * @var int $roundingMinutes 
      * 
@@ -104,11 +107,13 @@ class SyncTimings extends Command
         InvoiceNinjaClient $invoiceNinjaClient,
         $clients,
         $projects,
+        $users,
         $roundtimings,
         $billableOnly
     ) {
         $this->togglClient = $togglClient;
         $this->reportsClient = $reportsClient;
+        $this->users = $users;
         $this->invoiceNinjaClient = $invoiceNinjaClient;
         $this->clients = $clients;
         $this->projects = $projects;
@@ -155,26 +160,18 @@ class SyncTimings extends Command
 
             foreach($logFilteredTimeEntries as $timeEntry) {
                 if(!$this->billableOnly | ($this->billableOnly && $timeEntry->isBillable())){
-                    $timeEntrySent = false;
                     $createdTask = null;
 
-                    // Log the entry if the client key exists
-                    if ($this->timeEntryCanBeLoggedByConfig($this->clients, $timeEntry->getClient(), $timeEntrySent)) {
+                    $clientExists =$this->doesConfigKeyExist($this->clients, $timeEntry->getClient());
+                    $projectExists = $this->doesConfigKeyExist($this->projects, $timeEntry->getProject());
+                    $userExists = $this->doesConfigKeyExist($this->users, $timeEntry->getUser());
+
+                    // Log the entry if all keys exist
+                    if ($clientExists && $projectExists && $userExists) {
                         $createdTask = $this->logTask($timeEntry);
-
-                        $timeEntrySent = true;
                     }
 
-                    // Log the entry if the project key exists
-                    if ($this->timeEntryCanBeLoggedByConfig($this->projects, $timeEntry->getProject(), $timeEntrySent)) {
-                        $createdTask = $this->logTask($timeEntry);
-
-                        $timeEntrySent = true;
-                    }
-
-                    if ($timeEntrySent) {
-                        $this->io->success('TimeEntry successfully sent to InvoiceNinja. (' . $this->buildTaskDescription($timeEntry) . ')[' . $createdTask->getId() . ']');
-                    }
+                    $this->io->success('TimeEntry successfully sent to InvoiceNinja. (' . $this->buildTaskDescription($timeEntry) . ')[' . $createdTask->getId() . ']');
                 }
             }
         }
@@ -258,12 +255,8 @@ class SyncTimings extends Command
      *
      * @return bool
      */
-    private function timeEntryCanBeLoggedByConfig(array $config, string $entryKey, bool $hasAlreadyBeenSent): bool
+    private function doesConfigKeyExist(array $config, string $entryKey): bool
     {
-        if ($hasAlreadyBeenSent) {
-            return false;
-        }
-
         return (is_array($config) && array_key_exists($entryKey, $config));
     }
 
@@ -315,8 +308,9 @@ class SyncTimings extends Command
         $task->setClientId($this->clients[$entry->getClient()]);
         $task->setProjectId($this->projects[$entry->getProject()]);
         $task->setTogglId($entry->getId());
+        $task->setUserId($this->users[$entry->getUser()]);
 
-        $newTask = $this->invoiceNinjaClient->saveNewTask($task);
+        $newTask = $this->invoiceNinjaClient->createTask($task);
         return $newTask;
     }
 

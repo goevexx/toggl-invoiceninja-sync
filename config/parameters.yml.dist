@@ -22,6 +22,18 @@ parameters:
          first_project: abc12
          second_project: abc123
 
+    # Key = name in toggl
+    # Value= id from invoiceninja
+    projects:
+         first_project: abc12
+         second_project: abc123
+
+    # Key = name in toggl
+    # Value= id from invoiceninja
+    users:
+         first_user: abc12
+         second_user: abc123
+
     
     time.round.minutes: 0
     toggl.billable_only: true
