@@ -51,7 +51,7 @@ class Client
      *
      * @return Task
      */
-    public function saveNewTask(Task $task)
+    public function createTask(Task $task)
     {
         $data = $this->serializer->serialize($task, 'json');
 
@@ -68,5 +68,25 @@ class Client
         $responseBody = $response->getBody();
         $postTaskResponse = $this->serializer->deserialize($responseBody, PostTaskResponse::class, 'json');
         return $postTaskResponse->getData();
+    }
+
+    /**
+     * @param string $task
+     *
+     * @return bool success
+     */
+    public function deleteTask(string $taskId): bool
+    {
+
+        $response = $this->client->request('DELETE', self::VERSION . '/tasks/' . $taskId, [
+            'allow_redirects' => ['strict'=>true],
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'X-API-Token' => $this->api_token,
+                'X-Requested-With' => 'XMLHttpRequest',
+            ]
+        ]);
+
+        return $response->getStatusCode() == 200;
     }
 }
