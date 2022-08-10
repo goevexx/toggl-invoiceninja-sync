@@ -16,6 +16,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use DateTimeZone;
 use DateTime;
+use DateInterval;
 
 define('OPTION_SINCE', 'since');
 define('OPTION_SINCE_SHORT', 's');
@@ -148,10 +149,9 @@ class SyncTimings extends Command
         $workspaces = $this->getWorkspacesOrExit();
 
         foreach ($workspaces as $workspace) {
-            $detailedReport = $this->reportsClient->getDetailedReport($workspace->getId(), $this->since, $this->until);
+            $reportTimeEntries = $this->reportsClient->getTimeEntries($workspace->getId(), $this->since, $this->until);
 
-            $timeEntries = $detailedReport->getData();
-            $logFilteredTimeEntries = $this->filterNotYetLoggedTimeEntries($timeEntries);
+            $logFilteredTimeEntries = $this->filterNotYetLoggedTimeEntries($reportTimeEntries);
 
             foreach($logFilteredTimeEntries as $timeEntry) {
                 if(!$this->billableOnly | ($this->billableOnly && $timeEntry->isBillable())){
@@ -361,7 +361,7 @@ class SyncTimings extends Command
      * @param \DateTime $end Duration end time
      * @return \DateTime $start + rounded duration
      **/
-    public function maybeExtendDuration(\DateTime $start, \DateTime $end): \DateTime
+    public function maybeExtendDuration(DateTime $start, DateTime $end): DateTime
     {
         $startClone = clone $start;
         $duration  = $startClone->diff($end);
@@ -375,10 +375,10 @@ class SyncTimings extends Command
      * Rounds interval minutes
      *
      * @param \DateInterval $interval Interval to be rounded
-     * @param \DateInterval $roundToMinutes Minutes to be rounded to
+     * @param \int $roundToMinutes Minutes to be rounded to
      * @return \DateInterval
      **/
-    private static function roundDateIntervalMinutes(\DateInterval $interval, int $roundToMinutes)
+    private static function roundDateIntervalMinutes(DateInterval $interval, int $roundToMinutes): DateInterval
     {
             // Take date parts off duration
             $partialDaysStr = $interval->format('%d');
@@ -388,6 +388,14 @@ class SyncTimings extends Command
             $partialDays = intval($partialDaysStr);
             $partialHours =   intval($partialHoursStr);
             $partialMinutes = intval($partialMinutesStr);
+
+            // If the interval contains no days, hours or minutes
+            // then it will be counted as one rounding
+            if($partialDays == 0 
+            && $partialHours == 0 
+            && $partialMinutes == 0){
+                return new DateInterval('PT'.$roundToMinutes.'M');
+            } 
 
             // Round minutes
             $minutes = $partialDays * 24 * 60 + $partialHours * 60 + $partialMinutes;
@@ -410,7 +418,7 @@ class SyncTimings extends Command
             if($roundedPartialMinutes != 0){
                 $intervalFormat .= $roundedPartialMinutes.'M';
             }
-            $roundedDuration = new \DateInterval($intervalFormat);
+            $roundedDuration = new DateInterval($intervalFormat);
 
             return $roundedDuration;
     }
