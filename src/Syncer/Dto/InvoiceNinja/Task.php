@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace Syncer\Dto\InvoiceNinja;
+use Carbon\Carbon;
 
 /**
  * Class Task
@@ -60,6 +61,31 @@ class Task
     {
         return $this->timeLog;
     }
+
+	/**
+	 * Returns the time log array with timestamps replaced by datetimes
+	 * 
+     * @return array
+     */
+    public function getTimeLogDateTime(): array
+    {
+		$timeLogs = json_decode($this->getTimeLog());
+
+		$dateTimeLogs = [];
+		foreach($timeLogs as $timeLog){
+			$startTimeStamp = $timeLog[0];
+			$endTimeStamp = $timeLog[1];
+			
+			$start = Carbon::createFromTimestamp($startTimeStamp)->toDateTime();
+			$end = Carbon::createFromTimestamp($endTimeStamp)->toDateTime();
+
+			array_push($dateTimeLogs, [$start, $end]);
+		}
+
+        return $dateTimeLogs;
+    }
+
+	
 
     /**
      * @param string $timeLog

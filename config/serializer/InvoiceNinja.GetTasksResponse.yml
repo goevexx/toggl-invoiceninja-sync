@@ -1,7 +1,11 @@
-Syncer\Dto\InvoiceNinja\PostTaskResponse:
+Syncer\Dto\InvoiceNinja\GetTasksResponse:
     exclusion_policy: ALL
     properties:
         data:
             type: array<Syncer\Dto\InvoiceNinja\Task>
             serialized_name: data
+            exclude: false
+        meta:
+            type: Syncer\Dto\InvoiceNinja\Meta
+            serialized_name: meta
             exclude: false

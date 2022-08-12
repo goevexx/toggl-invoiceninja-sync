@@ -1,0 +1,19 @@
+Syncer\Dto\InvoiceNinja\Pagination:
+    exclusion_policy: ALL
+    properties:
+      count:
+        type: int
+        exclude: false
+        serialized_name: count
+      perPage:
+        type: int
+        exclude: false
+        serialized_name: per_page
+      currentPage:
+        type: int
+        exclude: false
+        serialized_name: current_page
+      totalPages:
+        type: int
+        exclude: false
+        serialized_name: total_pages

@@ -87,10 +87,10 @@ class SyncTimings extends Command
     private $billableOnly;  
 
     /** @var \DateTime $since Since when time entries got to be synced */
-    protected $since;
+    private $since;
 
     /** @var \DateTime $until Until when time entries got to be synced */
-    protected $until;
+    private $until;
 
     /**
      * SyncTimings constructor.

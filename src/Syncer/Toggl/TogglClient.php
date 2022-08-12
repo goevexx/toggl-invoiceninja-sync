@@ -78,4 +78,6 @@ class TogglClient
         return $putTimeEntryResponse->getData();
     
     }
+
+    // TODO: Get timeentries (between dates)
 }

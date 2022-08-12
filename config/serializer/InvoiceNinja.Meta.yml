@@ -1,0 +1,7 @@
+Syncer\Dto\InvoiceNinja\Meta:
+    exclusion_policy: ALL
+    properties:
+      pagination:
+        type: Syncer\Dto\InvoiceNinja\Pagination
+        exclude: false
+        serialized_name: pagination

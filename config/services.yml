@@ -15,6 +15,7 @@ services:
         class: Symfony\Component\Console\Application
         calls:
             - [add, ['@syncer.command.sync_timings']]
+            - [add, ['@syncer.command.sync_delete']]
 
     syncer.command.sync_timings:
         class: Syncer\Command\SyncTimings
@@ -27,6 +28,14 @@ services:
             - '%users%'
             - '%time.round.minutes%'
             - '%toggl.billable_only%'
+
+    
+    syncer.command.sync_delete:
+        class: Syncer\Command\SyncDelete
+        arguments:
+            - '@toggl.client.toggl'
+            - '@toggl.client.reports'
+            - '@invoice_ninja.client'
 
     toggl.guzzle.toggl:
         class: GuzzleHttp\Client
