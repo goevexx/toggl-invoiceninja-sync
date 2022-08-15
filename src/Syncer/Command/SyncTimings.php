@@ -29,8 +29,6 @@ define('OPTION_ROUND_SHORT', 'r');
 
 define('TIMEZONE', 'Europe/Berlin');
 
-define('INVOICENINJA_REF_LABEL', 'IN Task: ');
-
 /**
  * Class SyncTimings
  * @package Syncer\Command
@@ -189,8 +187,7 @@ class SyncTimings extends Command
     public function filterNotYetLoggedTimeEntries(array $entries): array
     {
         $filteredEntries = array_filter($entries, function(TimeEntry $entry){
-            $invoiceNinjaTaskPattern = '/^'.INVOICENINJA_REF_LABEL.'(\w+)$/';
-            $invoiceNinjaTaskTags = preg_grep($invoiceNinjaTaskPattern, $entry->getTags());
+            $invoiceNinjaTaskTags = preg_grep(InvoiceNinjaClient::getTaskRefLabelRegexp(), $entry->getTags());
             if(count($invoiceNinjaTaskTags) > 0){
                 return false;
             }
@@ -286,7 +283,7 @@ class SyncTimings extends Command
     public function refTimeEntry(TimeEntry $entry, Task $task): TimeEntry
     {
         $tags = $entry->getTags();
-        array_push($tags, INVOICENINJA_REF_LABEL . $task->getId());
+        array_push($tags, InvoiceNinjaClient::createTaskRefLabel($task->getId()));
         $newEntry = new TimeEntry();
         $newEntry->setId($entry->getId());
         $newEntry->setTags($tags);

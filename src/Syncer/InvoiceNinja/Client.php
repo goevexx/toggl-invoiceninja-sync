@@ -7,7 +7,11 @@ use JMS\Serializer\SerializerInterface;
 use Syncer\Dto\InvoiceNinja\Task;
 use Syncer\Dto\InvoiceNinja\PostTaskResponse;
 use Syncer\Dto\InvoiceNinja\GetTasksResponse;
+use Syncer\Dto\InvoiceNinja\GetTaskResponse;
 use DateInterval;
+use PhpSpec\Exception\Exception;
+
+define('INVOICENINJA_TASK_REF_LABEL', 'IN Task: ');
 
 /**
  * Class Client
@@ -134,6 +138,33 @@ class Client
     }
 
     /**
+     * Gets a task by id
+     *
+     * @param string $taskId 
+     * @return Task|null
+     **/
+    public function getTask(string $taskId): Task
+    {
+        $response = $this->client->request('GET', self::VERSION . '/tasks/'. $taskId, [
+            'allow_redirects' => ['strict'=>true],
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'X-API-Token' => $this->api_token,
+                'X-Requested-With' => 'XMLHttpRequest',
+            ],
+            'query' => [
+                'is_deleted' => false,
+            ]
+        ]);
+
+        if($response->getStatusCode() <> 200){
+            throw new Exception('Fehler beim holen von Task ' . $taskId);
+        }
+        $getTaskResponse = $this->serializer->deserialize($response->getBody(), GetTaskResponse::class, 'json');
+        return $getTaskResponse->getData();
+    }
+
+    /**
      * @param Task $task
      *
      * @return Task
@@ -142,15 +173,15 @@ class Client
     {
         $data = $this->serializer->serialize($task, 'json');
 
-        // $response = $this->client->request('POST', self::VERSION . '/tasks', [
-        //     'allow_redirects' => ['strict'=>true],
-        //     'body' => $data,
-        //     'headers' => [
-        //         'Content-Type' => 'application/json',
-        //         'X-API-Token' => $this->api_token,
-        //         'X-Requested-With' => 'XMLHttpRequest',
-        //     ]
-        // ]);
+        $response = $this->client->request('POST', self::VERSION . '/tasks', [
+            'allow_redirects' => ['strict'=>true],
+            'body' => $data,
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'X-API-Token' => $this->api_token,
+                'X-Requested-With' => 'XMLHttpRequest',
+            ]
+        ]);
 
         $responseBody = $response->getBody();
         $postTaskResponse = $this->serializer->deserialize($responseBody, PostTaskResponse::class, 'json');
@@ -175,5 +206,29 @@ class Client
         ]);
 
         return $response->getStatusCode() == 200;
+    }
+
+    /**
+     * Create ref label for a task
+     *
+     * @param string $taskId 
+     * @return string ref label string
+     **/
+    public static function createTaskRefLabel(string $taskId): string
+    {
+        return INVOICENINJA_TASK_REF_LABEL . $taskId;
+    }
+
+
+    /**
+     * Get ref label regexp for a task
+     * 
+     * $1 match is task id
+     *
+     * @return string ref label regexp pattern
+     **/
+    public static function getTaskRefLabelRegexp(): string
+    {
+        return '/^'.INVOICENINJA_TASK_REF_LABEL.'(\w+)$/';
     }
 }

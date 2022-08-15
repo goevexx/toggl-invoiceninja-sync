@@ -16,6 +16,7 @@ services:
         calls:
             - [add, ['@syncer.command.sync_timings']]
             - [add, ['@syncer.command.sync_delete']]
+            - [add, ['@syncer.command.sync_clean']]
 
     syncer.command.sync_timings:
         class: Syncer\Command\SyncTimings
@@ -32,6 +33,14 @@ services:
     
     syncer.command.sync_delete:
         class: Syncer\Command\SyncDelete
+        arguments:
+            - '@toggl.client.toggl'
+            - '@toggl.client.reports'
+            - '@invoice_ninja.client'
+
+
+    syncer.command.sync_clean:
+        class: Syncer\Command\SyncClean
         arguments:
             - '@toggl.client.toggl'
             - '@toggl.client.reports'

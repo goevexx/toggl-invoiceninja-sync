@@ -24,7 +24,7 @@ use DateInterval;
  *
  * @author Nicolas Morawietz <nmorawietz@programmierschmiede.de>
  */
-class SyncDelete extends Command
+class SyncClean extends Command
 {
     /**
      * @var SymfonyStyle
@@ -45,12 +45,6 @@ class SyncDelete extends Command
      * @var InvoiceNinjaClient
      */
     private $invoiceNinjaClient;
-
-    /** @var \DateTime $since Since when time entries got to be synced */
-    protected $since;
-
-    /** @var \DateTime $until Until when time entries got to be synced */
-    protected $until;
 
     /**
      * SyncTimings constructor.
@@ -76,10 +70,8 @@ class SyncDelete extends Command
     protected function configure()
     {
         $this
-            ->setName('sync:delete')
-            ->setDescription('Deletes tasks in invoiceninja and removes references in toggl')
-            ->addOption(OPTION_SINCE, OPTION_SINCE_SHORT, InputOption::VALUE_REQUIRED, 'Date from which timings get synced (See https://www.php.net/manual/de/datetime.formats.date.php)')
-            ->addOption(OPTION_UNTIL, OPTION_UNTIL_SHORT, InputOption::VALUE_REQUIRED, 'Date to which timings get synced (including this day) (See https://www.php.net/manual/de/datetime.formats.date.php)')
+            ->setName('sync:clean')
+            ->setDescription('Cleans up unreferenced toggl tags') 
             ;
     }
 
@@ -107,61 +99,36 @@ class SyncDelete extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->io = new SymfonyStyle($input, $output);
-        
-        $this->getOptions($input);
 
         $workspaces = $this->getWorkspacesOrExit();
-
-        $deletedTaskIds = $this->invoiceNinjaClient->deleteTasksBetween($this->since, $this->until);
-        
-        $this->io->success('Deleted tasks: ' . implode(", ", $deletedTaskIds));
-        
-        
-        
         foreach ($workspaces as $workspace) {
-            // Convert task ids to referenced tag names
-            $taskTagNames = [];
-            foreach ($deletedTaskIds as $deletedTaskId) {
-                array_push($taskTagNames, InvoiceNinjaClient::createTaskRefLabel($deletedTaskId));
-            }
-
-            // Get tag ids from name matching tags
             $allTags = $this->togglClient->getAllTags($workspace->getId());
+
             $tagIdsToBeDeleted = [];
             foreach ($allTags as $tag) {
-                if (in_array($tag->getName(), $taskTagNames)) {
-                    array_push($tagIdsToBeDeleted, $tag->getId());
+                $taskRefMatchedCount = preg_match_all(InvoiceNinjaClient::getTaskRefLabelRegexp(), $tag->getName(), $taskRefMatch);
+                if ($taskRefMatchedCount == 1) {
+                    $taskId = $taskRefMatch[1][0];
+                    $task = $this->invoiceNinjaClient->getTask($taskId);
+                    if (!isset($task) || $task->getDeleted()) {
+                        array_push($tagIdsToBeDeleted, $tag->getId());
+                    }
                 }
             }
 
             // Delete tags
-            $this->togglClient->deleteTagsById($tagIdsToBeDeleted);
+            $deltedTagIds = $this->togglClient->deleteTagsById($tagIdsToBeDeleted);
 
-            $this->io->success('[WID:' . $workspace->getId() . '] Deleted tags: ' . implode(", ", $tagIdsToBeDeleted));
+            if(count($deltedTagIds) == 0){
+                $this->io->success('[WID:' . $workspace->getId() . '] No tags deleted');
+            } else {
+                $this->io->success('[WID:' . $workspace->getId() . '] Deleted tags: ' . implode(", ", $deltedTagIds));
+            }
 
         }
+        
         return 0;
     }
 
-    /**
-     * Sets console arguments
-     *
-     * @param InputInterface $input Argument enclosing object
-     * @return void
-     **/
-    private function getOptions(InputInterface $input)
-    {
-        $timezone = new DateTimeZone(TIMEZONE);
-
-        $sinceOption = $input->getOption('since');
-        if(isset($sinceOption) && $sinceTime = new DateTime($sinceOption, $timezone)){
-            $this->since = $sinceTime;
-        }
-
-        $untilOption = $input->getOption('until');
-        if(isset($untilOption) && $untilTime = new DateTime($untilOption, $timezone)){
-            $this->until = $untilTime;
-        } 
-    }
 
 }

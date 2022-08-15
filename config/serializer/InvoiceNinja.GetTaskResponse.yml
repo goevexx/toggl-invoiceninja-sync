@@ -1,0 +1,8 @@
+Syncer\Dto\InvoiceNinja\GetTaskResponse:
+    exclusion_policy: ALL
+    properties:
+        data:
+            type: Syncer\Dto\InvoiceNinja\Task
+            serialized_name: data
+            exclude: false
+            skip_when_empty: true

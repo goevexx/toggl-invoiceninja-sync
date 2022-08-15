@@ -38,6 +38,9 @@ class Task
 	/** @var string $userid  */
 	private $userId;
 
+	/** @var boolean $deleted  */
+	private $deleted;
+
     /**
      * @return string
      */
@@ -196,6 +199,23 @@ class Task
 	 */
 	function setUserId($userid): self {
 		$this->userId = $userid;
+		return $this;
+	}
+	/**
+	 * 
+	 * @return boolean
+	 */
+	function getDeleted() {
+		return $this->deleted;
+	}
+	
+	/**
+	 * 
+	 * @param boolean $deleted 
+	 * @return Task
+	 */
+	function setDeleted($deleted): self {
+		$this->deleted = $deleted;
 		return $this;
 	}
 }

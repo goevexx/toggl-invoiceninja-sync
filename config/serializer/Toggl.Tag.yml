@@ -1,0 +1,14 @@
+Syncer\Dto\Toggl\Tag:
+    exclusion_policy: ALL
+    properties:
+        id:
+            type: integer
+            exclude: false
+        workspaceId:
+            type: integer
+            exclude: false
+            serialized_name: wid
+        name:
+            type: string
+            exclude: false
+            

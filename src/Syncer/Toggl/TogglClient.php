@@ -7,6 +7,9 @@ use JMS\Serializer\SerializerInterface;
 use Syncer\Dto\Toggl\Workspace;
 use Syncer\Dto\Toggl\TimeEntry;
 use Syncer\Dto\Toggl\PutTimeEntryResponse;
+use Syncer\Dto\Toggl\GetTagsResponse;
+use Syncer\Dto\Toggl\Tag;
+use PhpSpec\Exception\Exception;
 
 /**
  * Class TogglClient
@@ -79,5 +82,67 @@ class TogglClient
     
     }
 
-    // TODO: Get timeentries (between dates)
+    /**
+     * Get all tags
+     *
+     * @param int $workspaceId
+     * @return Tag[]
+     **/
+    public function getAllTags(int $workspaceId)
+    {
+        $response = $this->client->request('GET', self::VERSION . '/workspaces/' . $workspaceId . '/tags', [
+            'auth' => [$this->api_key, 'api_token'],
+        ]);
+
+        if($response->getStatusCode()<>200){
+            throw new Exception('Get Tags StatusCode = ' . $response->getStatusCode());
+        }
+
+        try {
+            $tags = $this->serializer->deserialize($response->getBody(), 'array<'.Tag::class.'>' , 'json');
+        } catch(\JMS\Serializer\Exception\RuntimeException $e) {
+            if ($e->getMessage() == 'Expected array, but got NULL: null') {
+                return [];
+            }
+        }
+        
+        return $tags;
+    }
+
+    /**
+     * Deletes a tag in toggl
+     *
+     * @param int $tagId
+     * @return bool
+     **/
+    public function deleteTag(int $tagId): bool
+    {
+        $response = $this->client->request('DELETE', self::VERSION . '/tags/' . $tagId, [
+            'auth' => [$this->api_key, 'api_token'],
+        ]);
+
+        return $response->getStatusCode() == 200;
+    }
+
+    /**
+     * Deletes bulk of tags by id
+     *
+     * @param string[] $tagIds 
+     * @param int   $deletePauseMikro    Mikrosecodns paused after delete execution
+     * @return array|null
+     **/
+    public function deleteTagsById(array $tagIds, int $deletePauseMikro = 250000): array
+    {
+        $deletedTags = [];
+        foreach($tagIds as $tagId){
+            if (!$this->deleteTag($tagId)){
+                return null;
+            } else {
+                array_push($deletedTags, $tagId);
+            }
+            usleep($deletePauseMikro);
+        }
+
+        return $deletedTags;
+    }
 }
