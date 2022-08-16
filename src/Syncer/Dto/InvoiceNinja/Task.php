@@ -15,17 +15,17 @@ class Task
     private $id;
 
     /**
-     * @var string
+     * @var string $description
      */
     private $description;
 
     /**
-     * @var string
+     * @var string $timeLog
      */
     private $timeLog;
 
     /**
-     * @var string
+     * @var string $clientId
      */
     private $clientId;
 
@@ -35,11 +35,14 @@ class Task
     /** @var int $togglId */
     private $togglId;
 
+	/** @var string $togglUser Toggl username */
+	private $togglUser;
+
 	/** @var string $userid  */
 	private $userId;
 
 	/** @var boolean $deleted  */
-	private $deleted;
+	private $deleted = false;
 
     /**
      * @return string
@@ -216,6 +219,24 @@ class Task
 	 */
 	function setDeleted($deleted): self {
 		$this->deleted = $deleted;
+		return $this;
+	}
+	
+	/**
+	 * 
+	 * @return string
+	 */
+	function getTogglUser() {
+		return $this->togglUser;
+	}
+	
+	/**
+	 * 
+	 * @param string $togglUser 
+	 * @return Task
+	 */
+	function setTogglUser($togglUser): self {
+		$this->togglUser = $togglUser;
 		return $this;
 	}
 }

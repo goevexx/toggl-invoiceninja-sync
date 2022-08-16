@@ -305,6 +305,7 @@ class SyncTimings extends Command
         $task->setClientId($this->clients[$entry->getClient()]);
         $task->setProjectId($this->projects[$entry->getProject()]);
         $task->setTogglId($entry->getId());
+        $task->setTogglUser($entry->getUser());
         $task->setUserId($this->users[$entry->getUser()]);
 
         $newTask = $this->invoiceNinjaClient->createTask($task);

@@ -4,9 +4,9 @@
 [![Code Coverage](https://scrutinizer-ci.com/g/Matth--/toggl-invoiceninja-sync/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/Matth--/toggl-invoiceninja-sync/?branch=master)
 
 # Invoice syncer
-This application is built to sync loggings from toggl to invoiceninja.
+This application is built to synchronize loggings from toggl to invoiceninja. 
 
-set the correct parameters in config/parameters.yml
+Set the correct parameters in config/parameters.yml
 
 ## Original Installation
 
@@ -68,8 +68,19 @@ The key-value pairs in users are destined to choose the correct user in invoicen
 
 to run the command just run:
 
+Synchronize timings
 ```bash
-php syncer sync:timings
+php syncer sync:timings --since='dd.mm.yyyy' --until='dd.mm.yyyy'
+```
+
+Delete timings
+```bash
+php syncer sync:delete --since='dd.mm.yyyy' --until='dd.mm.yyyy'
+```
+
+Remove reference from toggl logs, which do no longer exist in invoice ninja.
+```bash
+php syncer sync:clean
 ```
 
 ### Run as cronjob
