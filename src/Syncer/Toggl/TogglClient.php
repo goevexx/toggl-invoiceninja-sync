@@ -50,6 +50,8 @@ class TogglClient
     }
 
     /**
+     * Get's all workspaces accessible by the api token
+     * 
      * @return array|Workspace[]
      */
     public function getWorkspaces()
@@ -82,6 +84,22 @@ class TogglClient
     
     }
 
+
+    /**
+     * Deletes a tag in toggl
+     *
+     * @param int $tagId
+     * @return bool
+     **/
+    public function deleteTag(int $tagId): bool
+    {
+        $response = $this->client->request('DELETE', self::VERSION . '/tags/' . $tagId, [
+            'auth' => [$this->api_key, 'api_token'],
+        ]);
+
+        return $response->getStatusCode() == 200;
+    }
+
     /**
      * Get all tags
      *
@@ -107,21 +125,6 @@ class TogglClient
         }
         
         return $tags;
-    }
-
-    /**
-     * Deletes a tag in toggl
-     *
-     * @param int $tagId
-     * @return bool
-     **/
-    public function deleteTag(int $tagId): bool
-    {
-        $response = $this->client->request('DELETE', self::VERSION . '/tags/' . $tagId, [
-            'auth' => [$this->api_key, 'api_token'],
-        ]);
-
-        return $response->getStatusCode() == 200;
     }
 
     /**

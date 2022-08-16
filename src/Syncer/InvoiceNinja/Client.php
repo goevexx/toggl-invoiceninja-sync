@@ -52,89 +52,28 @@ class Client
         $this->api_token = $api_token;
     }
 
+
     /**
-     * Deletes all tasks in timespan
+     * Create ref label for a task
      *
-     * Deletes all tasks which have start time log between $since and $until.
-     * Returns an array of deleted task ids.
-     * Returns null if an error deleting a task occured
-     *
-     * @param \DateTime $since 
-     * @param \DateTime $until 
-     * @return string[]|null
+     * @param string $taskId 
+     * @return string ref label string
      **/
-    public function deleteTasksBetween(\DateTime $since,\DateTime $until): array
+    public static function createTaskRefLabel(string $taskId): string
     {
-        $aDayInterval = new DateInterval('P1D');
-
-        $tasks = $this->getAllTasks();
-
-        $deletedIds = [];
-        foreach ($tasks as $task) {
-            $timelogs = $task->getTimeLogDateTime();
-
-            $deleteTask = false;
-            foreach ($timelogs as $timelog ) {
-                $startTime = $timelog[0];
-                $untilsNextDay = $until->add($aDayInterval);
-                if($startTime >= $since && $startTime < $untilsNextDay){
-                    $deleteTask = true;
-                    break;
-                }
-            }
-
-            if($deleteTask){
-                $success = $this->deleteTask($task->getId());
-                if($success){
-                    array_push($deletedIds, $task->getId());
-                } else {
-                    return null;
-                }
-            }
-        }
-
-        return $deletedIds;
+        return INVOICENINJA_TASK_REF_LABEL . $taskId;
     }
 
     /**
-     * Gets all tasks
+     * Get ref label regexp for a task
      * 
-     * Get all tasks, which are not deleted, recursive
-     * 
-     * @return Task[]
-     * 
+     * $1 match is task id
+     *
+     * @return string ref label regexp pattern
      **/
-    public function getAllTasks(array $tasks = [], int $currentPage = 1): array
+    public static function getTaskRefLabelRegexp(): string
     {
-        $res = $this->client->request('GET', self::VERSION . '/tasks', [
-            'allow_redirects' => ['strict'=>true],
-            'headers' => [
-                'Content-Type' => 'application/json',
-                'X-API-Token' => $this->api_token,
-                'X-Requested-With' => 'XMLHttpRequest',
-            ],
-            'query' => [
-                'page' => $currentPage,
-                'is_deleted' => false,
-            ]
-        ]);
-
-        // Deserialize
-        $responseBody = $res->getBody();
-        $getTasksResponse = $this->serializer->deserialize($responseBody, GetTasksResponse::class, 'json');
-
-        // Add tasks together
-        $currentTasks = $getTasksResponse->getData();
-        $mergedTasks = array_merge($tasks, $currentTasks);
-
-        // Break recursion, if max page is reached
-        $totalPages = $getTasksResponse->getMeta()->getPagination()->getTotalPages();
-        if($currentPage == $totalPages){
-            return $mergedTasks;
-        }
-
-        // Recurse with incremented page
-        return $this->getAllTasks($mergedTasks, ++$currentPage);
+        return '/^'.INVOICENINJA_TASK_REF_LABEL.'(\w+)$/';
     }
 
     /**
@@ -208,27 +147,89 @@ class Client
         return $response->getStatusCode() == 200;
     }
 
+
     /**
-     * Create ref label for a task
-     *
-     * @param string $taskId 
-     * @return string ref label string
+     * Gets all tasks
+     * 
+     * Get all tasks, which are not deleted, recursive
+     * 
+     * @return Task[]
+     * 
      **/
-    public static function createTaskRefLabel(string $taskId): string
+    public function getAllTasks(array $tasks = [], int $currentPage = 1): array
     {
-        return INVOICENINJA_TASK_REF_LABEL . $taskId;
+        $res = $this->client->request('GET', self::VERSION . '/tasks', [
+            'allow_redirects' => ['strict'=>true],
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'X-API-Token' => $this->api_token,
+                'X-Requested-With' => 'XMLHttpRequest',
+            ],
+            'query' => [
+                'page' => $currentPage,
+                'is_deleted' => false,
+            ]
+        ]);
+
+        // Deserialize
+        $responseBody = $res->getBody();
+        $getTasksResponse = $this->serializer->deserialize($responseBody, GetTasksResponse::class, 'json');
+
+        // Add tasks together
+        $currentTasks = $getTasksResponse->getData();
+        $mergedTasks = array_merge($tasks, $currentTasks);
+
+        // Break recursion, if max page is reached
+        $totalPages = $getTasksResponse->getMeta()->getPagination()->getTotalPages();
+        if($currentPage == $totalPages){
+            return $mergedTasks;
+        }
+
+        // Recurse with incremented page
+        return $this->getAllTasks($mergedTasks, ++$currentPage);
     }
 
-
     /**
-     * Get ref label regexp for a task
-     * 
-     * $1 match is task id
+     * Deletes all tasks in timespan
      *
-     * @return string ref label regexp pattern
+     * Deletes all tasks which have start time log between $since and $until.
+     * Returns an array of deleted task ids.
+     * Returns null if an error deleting a task occured
+     *
+     * @param \DateTime $since 
+     * @param \DateTime $until 
+     * @return string[]|null
      **/
-    public static function getTaskRefLabelRegexp(): string
+    public function deleteTasksBetween(\DateTime $since,\DateTime $until): array
     {
-        return '/^'.INVOICENINJA_TASK_REF_LABEL.'(\w+)$/';
+        $aDayInterval = new DateInterval('P1D');
+
+        $tasks = $this->getAllTasks();
+
+        $deletedIds = [];
+        foreach ($tasks as $task) {
+            $timelogs = $task->getTimeLogDateTime();
+
+            $deleteTask = false;
+            foreach ($timelogs as $timelog ) {
+                $startTime = $timelog[0];
+                $untilsNextDay = $until->add($aDayInterval);
+                if($startTime >= $since && $startTime < $untilsNextDay){
+                    $deleteTask = true;
+                    break;
+                }
+            }
+
+            if($deleteTask){
+                $success = $this->deleteTask($task->getId());
+                if($success){
+                    array_push($deletedIds, $task->getId());
+                } else {
+                    return null;
+                }
+            }
+        }
+
+        return $deletedIds;
     }
 }
