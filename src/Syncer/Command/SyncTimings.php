@@ -169,7 +169,11 @@ class SyncTimings extends Command
                         $createdTask = $this->logTask($timeEntry);
                     }
 
-                    $this->io->success('TimeEntry successfully sent to InvoiceNinja. (' . $this->buildTaskDescription($timeEntry) . ')[' . $createdTask->getId() . ']');
+                    if(isset($createdTask)){
+                        $this->io->success('TimeEntry successfully sent to InvoiceNinja. (' . $this->buildTaskDescription($timeEntry) . ')[' . $createdTask->getId() . ']');
+                    } else {
+                        $this->io->error('Error sending TimeEntry. [' . $timeEntry->getId() . ']' . '(' . $timeEntry->getDescription() . ')');
+                    }
                 }
             }
         }
