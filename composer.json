@@ -12,7 +12,8 @@
         "symfony/yaml": "^4.0",
         "jms/serializer": "^1.11",
         "doctrine/cache": "^1.6",
-        "nesbot/carbon": "^1.21"
+        "nesbot/carbon": "^1.21",
+        "litgroup/equatable": "^2.0"
     },
     "authors": [
         {
