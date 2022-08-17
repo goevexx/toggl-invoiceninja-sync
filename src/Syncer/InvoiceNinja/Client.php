@@ -128,6 +128,31 @@ class Client
     }
 
     /**
+     * Updates a task
+     *
+     * @param Task $task 
+     * @return Task
+     **/
+    public function updateTask(Task $task)
+    {
+        $data = $this->serializer->serialize($task, 'json');
+
+        $response = $this->client->request('PUT', self::VERSION . '/tasks', [
+            'allow_redirects' => ['strict'=>true],
+            'body' => $data,
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'X-API-Token' => $this->api_token,
+                'X-Requested-With' => 'XMLHttpRequest',
+            ]
+        ]);
+
+        $responseBody = $response->getBody();
+        $postTaskResponse = $this->serializer->deserialize($responseBody, PostTaskResponse::class, 'json');
+        return $postTaskResponse->getData();
+    }
+
+    /**
      * @param string $task
      *
      * @return bool success
