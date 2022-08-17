@@ -2,6 +2,7 @@
 
 namespace Syncer\Dto\InvoiceNinja;
 use Carbon\Carbon;
+use LitGroup\Equatable\Equatable;
 
 /**
  * Class Task
@@ -9,7 +10,7 @@ use Carbon\Carbon;
  *
  * @author Matthieu Calie <matthieu@calie>
  */
-class Task
+class Task implements Equatable
 {
     /** @var string $id  */
     private $id;
@@ -238,5 +239,28 @@ class Task
 	function setTogglUser($togglUser): self {
 		$this->togglUser = $togglUser;
 		return $this;
+	}
+	
+	/**
+	 * Checks if this object is equal to another one.
+	 *
+	 * @param Equatable $another
+	 *
+	 * @return bool
+	 */
+	function equals(Equatable $another): bool {
+		if( $this->id === $another->id
+			&& $this->description === $another->description
+			&& $this->timeLog === $another->timeLog
+			&& $this->clientId === $another->clientId
+			&& $this->projectId === $another->projectId
+			&& $this->togglId === $another->togglId
+			&& $this->togglUser === $another->togglUser
+			&& $this->userId === $another->userId
+			&& $this->deleted = false === $another->deleted ){
+			return true;
+		} else {
+			return false;
+		}
 	}
 }
