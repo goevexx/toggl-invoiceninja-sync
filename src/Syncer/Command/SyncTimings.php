@@ -122,6 +122,8 @@ class SyncTimings extends Command
     }
 
     // TODO: Add Logging
+    // TODO: Add task update sync
+
     /**
      * Configure the command
      */
@@ -151,33 +153,150 @@ class SyncTimings extends Command
 
         $workspaces = $this->getWorkspacesOrExit();
 
+        $this->io->note('Start sync timings...');
+
         foreach ($workspaces as $workspace) {
             $reportTimeEntries = $this->reportsClient->getTimeEntries($workspace->getId(), $this->since, $this->until);
 
-            $logFilteredTimeEntries = $this->filterNotYetLoggedTimeEntries($reportTimeEntries);
+            $loggedTimeEntries = $this->filterLoggedTimeEntries($reportTimeEntries);
+            $notLoggedTimeEntries = $this->filterLoggedTimeEntries($reportTimeEntries, false);
 
-            foreach($logFilteredTimeEntries as $timeEntry) {
-                if(!$this->billableOnly | ($this->billableOnly && $timeEntry->isBillable())){
-                    $createdTask = null;
+            $this->io->note($workspace . 'Create new tasks...');
 
-                    $clientExists =$this->doesConfigKeyExist($this->clients, $timeEntry->getClient());
-                    $projectExists = $this->doesConfigKeyExist($this->projects, $timeEntry->getProject());
-                    $userExists = $this->doesConfigKeyExist($this->users, $timeEntry->getUser());
+            // Create new tasks for not yet logged time entries
+            foreach($notLoggedTimeEntries as $timeEntry) {
+                $this->handleNewTimeEntry($timeEntry);
+            }
 
-                    // Log the entry if all keys exist
-                    if ($clientExists && $projectExists && $userExists) {
-                        $createdTask = $this->logTask($timeEntry);
-                    }
-
-                    if(isset($createdTask)){
-                        $this->io->success('TimeEntry successfully sent to InvoiceNinja. (' . $this->buildTaskDescription($timeEntry) . ')[' . $createdTask->getId() . ']');
-                    } else {
-                        $this->io->error('Error sending TimeEntry. [' . $timeEntry->getId() . ']' . '(' . $timeEntry->getDescription() . ')');
-                    }
-                }
+            $this->io->note($workspace . 'Update existing tasks...');
+            // Update already logged time entries
+            foreach($loggedTimeEntries as $timeEntry) {
+                $this->handleReferencedTimeEntry($timeEntry);
             }
         }
+
+        $this->io->note('Sync timings finished.');
         return 0;
+    }
+
+    /**
+     * Handles a already referenced time entry
+     *
+     * Updates task if time entry information has updated
+     *
+     * @param TimeEntry $timeEntry 
+     **/
+    public function handleReferencedTimeEntry(TimeEntry $timeEntry)
+    {
+        $syncedTask = $this->syncTask($timeEntry);
+
+        if(!isset($syncedTask)){
+            $this->io->error('Error updating Task from TimeEntry. ' . $timeEntry);
+        }
+    }
+
+
+    /**
+     * Handles a new time entry
+     *
+     * Creates task when user, client and project exists and references the new task to the time entry
+     *
+     * @param TimeEntry $timeEntry 
+     **/
+    public function handleNewTimeEntry(TimeEntry $timeEntry)
+    {
+        if(!$this->billableOnly | ($this->billableOnly && $timeEntry->isBillable())){
+            $clientExists =$this->doesConfigKeyExist($this->clients, $timeEntry->getClient());
+            $projectExists = $this->doesConfigKeyExist($this->projects, $timeEntry->getProject());
+            $userExists = $this->doesConfigKeyExist($this->users, $timeEntry->getUser());
+
+            // Only continue if the entry of all keys exist
+            if ($clientExists && $projectExists && $userExists) {
+                $this->io->comment('New time entry.' . $timeEntry);
+
+                $createdTask = $this->logTask($timeEntry);
+
+                if(isset($createdTask)){
+                    $this->io->success('Task successfully sent to InvoiceNinja. ' . $createdTask);
+                } else {
+                    $this->io->error('Error creating Task from TimeEntry. ' . $timeEntry);
+                }
+            } else {
+                $this->io->error('Couldn\'t create Task from TimeEntry.' . $timeEntry);
+                $this->io->error('At least one of either clients, projects or users in your config doesn\'t exist');
+            }
+        }
+    }
+
+    /**
+     * Gets task id from time entry tags
+     *
+     * Returns task id if it was found, else returns empty string if it wasn't found
+     *
+     * @param TimeEntry $timeEntry 
+     * @return string Task id
+     **/
+    private static function getTaskIdFromTimeEntry(TimeEntry $timeEntry)
+    {
+        $invoiceNinjaTaskTags = preg_grep(InvoiceNinjaClient::getTaskRefLabelRegexp(), $timeEntry->getTags());
+        if(count($invoiceNinjaTaskTags) > 1){
+            throw new \Exception('Time Entry has multiple Task IDs. ' .$timeEntry);
+        } else if (count($invoiceNinjaTaskTags) == 1){
+            $invoiceNinjaTaskTag = $invoiceNinjaTaskTags[0];
+            preg_match(InvoiceNinjaClient::getTaskRefLabelRegexp(), $invoiceNinjaTaskTag, 
+            $invoiceNinjaTaskIdMatch);
+            $invoiceNinjaTaskId = $invoiceNinjaTaskIdMatch[1];
+            return $invoiceNinjaTaskId;
+        } else {
+            return "";
+        }
+    }
+
+    /**
+     * Filters an not yet logged time entry
+     *
+     * @param TimeEntry $entry
+     * @return bool
+     **/
+    static function notLoggedYetFilter(TimeEntry $entry): bool {
+        $invoiceNinjaTaskTags = SyncTimings::getTaskIdFromTimeEntry($entry);
+        if(strlen($invoiceNinjaTaskTags) > 0){
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Filters an already logged time entry
+     *
+     * @param TimeEntry $entry
+     * @return bool
+     **/
+    static function loggedYetFilter(TimeEntry $entry){
+        $invoiceNinjaTaskTags = SyncTimings::getTaskIdFromTimeEntry($entry);
+        if(strlen($invoiceNinjaTaskTags) > 0){
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Filters time entries when they are $logged or not
+     *
+     * Searches time entry's tags for invoice ninja task id 
+     *
+     * @param TimeEntry[] $entries 
+     * @return TimeEntry[]
+     **/
+    public function filterLoggedTimeEntries(array $entries, bool $logged = true): array
+    {
+        if($logged){
+            $filteredEntries = array_filter($entries, array(SyncTimings::class, 'loggedYetFilter'));
+        } else {
+            $filteredEntries = array_filter($entries, array(SyncTimings::class, 'notLoggedYetFilter'));
+        }
+
+        return $filteredEntries;
     }
 
     /**
@@ -188,17 +307,17 @@ class SyncTimings extends Command
      * @param TimeEntry[] $entries 
      * @return TimeEntry[]
      **/
-    public function filterNotYetLoggedTimeEntries(array $entries): array
-    {
-        $filteredEntries = array_filter($entries, function(TimeEntry $entry){
-            $invoiceNinjaTaskTags = preg_grep(InvoiceNinjaClient::getTaskRefLabelRegexp(), $entry->getTags());
-            if(count($invoiceNinjaTaskTags) > 0){
-                return false;
-            }
-            return true;
-        });
-        return $filteredEntries;
-    }
+    // public function filterNotYetLoggedTimeEntries(array $entries): array
+    // {
+    //     $filteredEntries = array_filter($entries, function(TimeEntry $entry){
+    //         $invoiceNinjaTaskTags = preg_grep(InvoiceNinjaClient::getTaskRefLabelRegexp(), $entry->getTags());
+    //         if(count($invoiceNinjaTaskTags) > 0){
+    //             return false;
+    //         }
+    //         return true;
+    //     });
+    //     return $filteredEntries;
+    // }
 
     /**
      * Gets workspaces or else exits
@@ -275,6 +394,36 @@ class SyncTimings extends Command
     }
 
     /**
+     * Synchronizes changes in time entry
+     *
+     * Comapares time entry with existing task and updates conditionally
+     *
+     * @param TimeEntry $timeEntry 
+     * @return Task
+     **/
+    private function syncTask(TimeEntry $timeEntry): Task
+    {
+        $taskId = $this->getTaskIdFromTimeEntry($timeEntry);
+        $task = $this->invoiceNinjaClient->getTask($taskId);
+
+        $taskFromTimeEntry = $this->timeEntryToTask($timeEntry, $taskId);
+
+        $taskChanged = !$task->equals($taskFromTimeEntry, ['number']);
+        
+        if ($taskChanged){
+            $this->io->comment('Task has changes. ' . $task . '!=' . $taskFromTimeEntry) ;
+            $newTask = $this->invoiceNinjaClient->updateTask($taskFromTimeEntry);
+
+            if(isset($newTask)){
+                $this->io->success('Task successfully updated. ' . $newTask);
+                return $newTask;
+            }
+
+        }
+        return $task;
+    }
+
+    /**
      * Refs time entry to task
      *
      * Adds Task to time entry with given task id
@@ -295,16 +444,22 @@ class SyncTimings extends Command
         return $this->togglClient->updateTimeEntry($newEntry);
     }
 
-        /**
-     * @param TimeEntry $entry
+    /**
+     * Converts time entry to task
      *
+     * @param TimeEntry $entry
+     * @param string $taskId
      * @return Task
-     */
-    private function createTask(TimeEntry $entry): Task
+     **/
+    private function timeEntryToTask(TimeEntry $entry, string $taskId = null)
     {
         $task = new Task();
 
-        $task->setDescription($this->buildTaskDescription($entry));
+        if(isset($taskId)){
+            $task->setId($taskId);
+        }
+
+        $task->setDescription(SyncTimings::buildTaskDescription($entry));
         $task->setTimeLog($this->buildTimeLog($entry));
         $task->setClientId($this->clients[$entry->getClient()]);
         $task->setProjectId($this->projects[$entry->getProject()]);
@@ -312,6 +467,17 @@ class SyncTimings extends Command
         $task->setTogglUser($entry->getUser());
         $task->setUserId($this->users[$entry->getUser()]);
 
+        return $task;
+    }
+
+    /**
+     * @param TimeEntry $entry
+     *
+     * @return Task
+     */
+    private function createTask(TimeEntry $entry): Task
+    {
+        $task = $this->timeEntryToTask($entry);
         $newTask = $this->invoiceNinjaClient->createTask($task);
         return $newTask;
     }
@@ -321,7 +487,7 @@ class SyncTimings extends Command
      *
      * @return string
      */
-    private function buildTaskDescription(TimeEntry $entry): string
+    private static function buildTaskDescription(TimeEntry $entry): string
     {
 
         $description = $entry->getDescription();
@@ -357,12 +523,12 @@ class SyncTimings extends Command
      * @param \DateTime $end Duration end time
      * @return \DateTime $start + rounded duration
      **/
-    public function maybeExtendDuration(DateTime $start, DateTime $end): DateTime
+    private function maybeExtendDuration(DateTime $start, DateTime $end): DateTime
     {
         $startClone = clone $start;
         $duration  = $startClone->diff($end);
         if ($this->roundingMinutes !== 0){
-            $duration = $this::roundDateIntervalMinutes($duration, $this->roundingMinutes);
+            $duration = SyncTimings::roundDateIntervalMinutes($duration, $this->roundingMinutes);
         }
         return $startClone->add($duration);
     }

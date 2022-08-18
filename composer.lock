@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "82e50954ddc54f93638d9a91e255452a",
+    "content-hash": "752167dfb96c2ce4c2377271fd09701a",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -881,46 +881,6 @@
                 }
             ],
             "time": "2020-04-07T20:44:10+00:00"
-        },
-        {
-            "name": "litgroup/equatable",
-            "version": "v2.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/LitGroup/equatable.php.git",
-                "reference": "f30bef8db85347bd45e4ba292551adaf9e3f1aa5"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/LitGroup/equatable.php/zipball/f30bef8db85347bd45e4ba292551adaf9e3f1aa5",
-                "reference": "f30bef8db85347bd45e4ba292551adaf9e3f1aa5",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^7.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "LitGroup\\Equatable\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Roman Shamritskiy",
-                    "email": "roman@litgroup.ru"
-                }
-            ],
-            "description": "Provides EquatableInterface for PHP 7+",
-            "support": {
-                "issues": "https://github.com/LitGroup/equatable.php/issues",
-                "source": "https://github.com/LitGroup/equatable.php/tree/master"
-            },
-            "time": "2016-09-21T09:34:01+00:00"
         },
         {
             "name": "nesbot/carbon",

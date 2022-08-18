@@ -111,6 +111,23 @@ class TimeEntry
     private $tags;
 
     /**
+     * Gets an identifier string
+     *
+     * Consists of information for the time entry to be tracked
+     *
+     * @return string
+     **/
+    public function __toString()
+    {
+        return 'TimeEntry {'
+            . 'ID: ' . $this->getId() . ', '
+            . 'Description: ' . $this->getDescription() . ', '  
+            . 'Project: ' . $this->getProject()  . ', '
+            . 'Time: ' . $this->getStart()->format('D d.M / d.m.Y H:i:s') . ' - ' . $this->getEnd()->format('D d.M / d.m.Y H:i:s') 
+            . '}';
+    }
+
+    /**
      * @return int
      */
     public function getId(): int

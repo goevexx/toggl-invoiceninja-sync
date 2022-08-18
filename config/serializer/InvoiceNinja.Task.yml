@@ -41,3 +41,7 @@ Syncer\Dto\InvoiceNinja\Task:
             type: boolean
             exclude: false
             serialized_name: is_deleted
+        number:
+            type: string
+            exclude: false
+            serialized_name: number

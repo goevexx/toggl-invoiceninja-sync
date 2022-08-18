@@ -84,24 +84,6 @@ class SyncDelete extends Command
     }
 
     /**
-     * Gets workspaces or else exits
-     *
-     * @return \Syncer\Dto\Toggl\Workspace[]
-     **/
-    public function getWorkspacesOrExit(): array
-    {
-        $workspaces = $this->togglClient->getWorkspaces();
-
-        if (!is_array($workspaces) || count($workspaces) === 0) {
-            $this->io->error('No workspaces to sync.');
-
-            exit(1);
-        }
-
-        return $workspaces;
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -110,36 +92,18 @@ class SyncDelete extends Command
         
         $this->getOptions($input);
 
-        $workspaces = $this->getWorkspacesOrExit();
+        $this->io->note('Start deleting...');
 
-        $deletedTaskIds = $this->invoiceNinjaClient->deleteTasksBetween($this->since, $this->until);
+        $this->io->note('Delete tasks...');
+        // Delete tasks
+        $deletedTaskIds = $this->handleTasksDelete();
         
-        $this->io->success('Deleted tasks: ' . implode(", ", $deletedTaskIds));
         
-        
-        
-        foreach ($workspaces as $workspace) {
-            // Convert task ids to referenced tag names
-            $taskTagNames = [];
-            foreach ($deletedTaskIds as $deletedTaskId) {
-                array_push($taskTagNames, InvoiceNinjaClient::createTaskRefLabel($deletedTaskId));
-            }
+        $this->io->note('Remove referenced tags...');
+        // Dereference time entries
+        $this->handleDereferenceTasks($deletedTaskIds);
+        $this->io->note('Deleting finished.');
 
-            // Get tag ids from name matching tags
-            $allTags = $this->togglClient->getAllTags($workspace->getId());
-            $tagIdsToBeDeleted = [];
-            foreach ($allTags as $tag) {
-                if (in_array($tag->getName(), $taskTagNames)) {
-                    array_push($tagIdsToBeDeleted, $tag->getId());
-                }
-            }
-
-            // Delete tags
-            $this->togglClient->deleteTagsById($tagIdsToBeDeleted);
-
-            $this->io->success('[WID:' . $workspace->getId() . '] Deleted tags: ' . implode(", ", $tagIdsToBeDeleted));
-
-        }
         return 0;
     }
 
@@ -164,4 +128,84 @@ class SyncDelete extends Command
         } 
     }
 
+    /**
+     * Deletes tasks in time range
+     *
+     * @return string[]
+     **/
+    private function handleTasksDelete(): array
+    {
+        $deletedTaskIds = $this->invoiceNinjaClient->deleteTasksBetween($this->since, $this->until);
+        if(isset($deletedTaskIds)){
+            $this->io->success('Successfully deleted tasks: ' . implode(", ", $deletedTaskIds));
+        } else {
+            $this->io->error('Error occured deleting tasks between ' . $this->since->format('d.m.Y') . ' and ' . $this->until->format('d.m.Y'));
+        }
+
+        return $deletedTaskIds;
+    }
+
+
+    /**
+     * Gets workspaces or else exits
+     *
+     * @return \Syncer\Dto\Toggl\Workspace[]
+     **/
+    public function getWorkspacesOrExit(): array
+    {
+        $workspaces = $this->togglClient->getWorkspaces();
+
+        if (!is_array($workspaces) || count($workspaces) === 0) {
+            $this->io->error('No workspaces to sync.');
+
+            exit(1);
+        }
+
+        return $workspaces;
+    }
+
+    /**
+     * Dereferences tasks by deleting tags
+     *
+     * @param string[] $deletedTaskIds 
+     **/
+    private function handleDereferenceTasks(array $deletedTaskIds)
+    {
+        $workspaces = $this->getWorkspacesOrExit();
+        foreach ($workspaces as $workspace) {
+            // Convert task ids to referenced tag names
+            $taskTagNames = [];
+            foreach ($deletedTaskIds as $deletedTaskId) {
+                array_push($taskTagNames, InvoiceNinjaClient::createTaskRefLabel($deletedTaskId));
+            }
+
+            // Get tag ids from name matching tags
+            $allTags = $this->togglClient->getAllTags($workspace->getId());
+            $tagIdsToBeDeleted = [];
+            foreach ($allTags as $tag) {
+                $tagName = $tag->getName();
+                if (in_array($tagName, $taskTagNames)) {
+                    $taskTagNamesKey = array_search($tagName, $taskTagNames);
+                    array_push($tagIdsToBeDeleted, $tag->getId());
+                    unset($taskTagNames[$taskTagNamesKey]);
+                } 
+            }
+            if(count($taskTagNames) > 0){
+                $this->io->comment($workspace . 'Following tags cannot be removed as they don\'t exist: ' . implode(', ',$taskTagNames));
+            }
+
+            // Delete tags
+            $deletedTagIds = $this->togglClient->deleteTagsById($tagIdsToBeDeleted);
+
+            if(!isset($deletedTagIds)){
+                $this->io->error($workspace . 'Error deleting tags.');
+            }
+
+            if(count($deletedTagIds) == 0){
+                $this->io->comment($workspace . 'No tags deleted.');
+            } else if (count($deletedTagIds) > 0){
+                $this->io->success($workspace . 'Successfully deleted tags: ' . implode(", ", $deletedTagIds));
+            }
+        }
+    }
 }

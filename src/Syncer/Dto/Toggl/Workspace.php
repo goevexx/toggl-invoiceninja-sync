@@ -15,6 +15,10 @@ class Workspace
      */
     private $id;
 
+    public function __toString(){
+        return '[WID:' . $this->id . ']';
+    }
+
     /**
      * @return mixed
      */

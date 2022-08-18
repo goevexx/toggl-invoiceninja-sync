@@ -10,7 +10,7 @@ use LitGroup\Equatable\Equatable;
  *
  * @author Matthieu Calie <matthieu@calie>
  */
-class Task implements Equatable
+class Task
 {
     /** @var string $id  */
     private $id;
@@ -42,8 +42,28 @@ class Task implements Equatable
 	/** @var string $userid  */
 	private $userId;
 
+	/** @var string $number  */
+	private $number;
+
 	/** @var boolean $deleted  */
 	private $deleted = false;
+
+
+    /**
+     * Gets an identifier string
+     *
+     * Consists of information for the task to be tracked
+     *
+     * @return string
+     **/
+    public function __toString()
+    {
+        return 'Task {'
+            . 'ID: ' . $this->getId() . ', '
+            . 'Number: ' . $this->getNumber() . ', ' 
+            . 'Description: ' . $this->getDescription()
+            . '}';
+    }
 
     /**
      * @return string
@@ -240,24 +260,62 @@ class Task implements Equatable
 		$this->togglUser = $togglUser;
 		return $this;
 	}
+
+	/**
+	 * 
+	 * @return string
+	 */
+	function getNumber() {
+		return $this->number;
+	}
 	
+	/**
+	 * 
+	 * @param string $number 
+	 * @return Task
+	 */
+	function setNumber($number): self {
+		$this->number = $number;
+		return $this;
+	}
+
 	/**
 	 * Checks if this object is equal to another one.
 	 *
-	 * @param Equatable $another
+	 * @param Task $another
+	 * @param string[] $dontCheck
 	 *
 	 * @return bool
 	 */
-	function equals(Equatable $another): bool {
-		if( $this->id === $another->id
-			&& $this->description === $another->description
-			&& $this->timeLog === $another->timeLog
-			&& $this->clientId === $another->clientId
-			&& $this->projectId === $another->projectId
-			&& $this->togglId === $another->togglId
-			&& $this->togglUser === $another->togglUser
-			&& $this->userId === $another->userId
-			&& $this->deleted = false === $another->deleted ){
+	function equals(Task $another, array $dontCheck = []): bool {
+		if( !(in_array('id', $dontCheck) && $this->id === $another->getId())
+		&& $this->equalsInfo($another, $dontCheck)){
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Checks if object equals in information
+	 *
+	 * Doesn't consider id
+	 *
+	 * @param Task $another 
+	 * @param string[] $dontCheck
+	 * @return bool
+	 **/
+	public function equalsInfo(Task $another, array $dontCheck)
+	{
+		if(		(in_array('description', $dontCheck) 		|| $this->description === $another->getDescription())
+		&& 	(in_array('timeLog', $dontCheck) 		|| $this->timeLog === $another->getTimeLog())
+		&& 	(in_array('clientId', $dontCheck) 		|| $this->clientId === $another->getClientId())
+		&& 	(in_array('projectId', $dontCheck) 		|| $this->projectId === $another->getProjectId())
+		&& 	(in_array('togglId', $dontCheck) 		|| $this->togglId === $another->getTogglId())
+		&& 	(in_array('togglUser', $dontCheck) 		|| $this->togglUser === $another->getTogglUser())
+		&& 	(in_array('userId', $dontCheck) 		|| $this->userId === $another->getUserId())
+		&& 	(in_array('number', $dontCheck) 		|| $this->number === $another->getNumber())
+		&& 	(in_array('deleted', $dontCheck) 		|| $this->deleted = false === $another->getDeleted()) ){
 			return true;
 		} else {
 			return false;

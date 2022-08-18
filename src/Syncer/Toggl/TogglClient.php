@@ -118,7 +118,7 @@ class TogglClient
 
         try {
             $tags = $this->serializer->deserialize($response->getBody(), 'array<'.Tag::class.'>' , 'json');
-        } catch(\JMS\Serializer\Exception\RuntimeException $e) {
+        } catch(\RuntimeException $e) {
             if ($e->getMessage() == 'Expected array, but got NULL: null') {
                 return [];
             }
@@ -134,7 +134,7 @@ class TogglClient
      * @param int   $deletePauseMikro    Mikrosecodns paused after delete execution
      * @return array|null
      **/
-    public function deleteTagsById(array $tagIds, int $deletePauseMikro = 250000): array
+    public function deleteTagsById(array $tagIds, int $deletePauseMikro = 250000): array|null
     {
         $deletedTags = [];
         foreach($tagIds as $tagId){

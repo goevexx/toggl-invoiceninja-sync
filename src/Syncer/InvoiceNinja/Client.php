@@ -137,7 +137,7 @@ class Client
     {
         $data = $this->serializer->serialize($task, 'json');
 
-        $response = $this->client->request('PUT', self::VERSION . '/tasks', [
+        $response = $this->client->request('PUT', self::VERSION . '/tasks/' . $task->getId(), [
             'allow_redirects' => ['strict'=>true],
             'body' => $data,
             'headers' => [
@@ -225,7 +225,7 @@ class Client
      * @param \DateTime $until 
      * @return string[]|null
      **/
-    public function deleteTasksBetween(\DateTime $since,\DateTime $until): array
+    public function deleteTasksBetween(\DateTime $since,\DateTime $until): array|null
     {
         $aDayInterval = new DateInterval('P1D');
 
