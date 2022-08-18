@@ -10,4 +10,4 @@ COPY ./ ./
 
 RUN composer install
 
-ENTRYPOINT ["php", "/syncer/syncer", "sync:timings"]
+ENTRYPOINT ["php", "/syncer/syncer"]

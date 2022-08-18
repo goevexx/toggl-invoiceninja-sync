@@ -68,7 +68,7 @@ The key-value pairs in users are destined to choose the correct user in invoicen
 
 to run the command just run:
 
-Synchronize timings
+Create and update tasks from time entries and update
 ```bash
 php syncer sync:timings --since='dd.mm.yyyy' --until='dd.mm.yyyy'
 ```
@@ -99,7 +99,7 @@ docker pull goevexx/toggl-invoiceninja-sync
 Run it. This only works if you mount [config/parameters.yml](#configuration).
 
 ```bash
-docker run --rm --name 'tgl-in-sync' -it -v /absolute/path/to/parameters.yml:/syncer/config/parameters.yml goevexx/toggl-invoiceninja-sync
+docker run --rm --name 'tgl-in-sync' -it -v /absolute/path/to/parameters.yml:/syncer/config/parameters.yml goevexx/toggl-invoiceninja-sync sync:timings
 ```
 
 You can also cron job this execution. See [Run as cronjob](#run-as-cronjob)
@@ -113,6 +113,10 @@ Added extra functionality to the sync:
 - Sync only not yet synced time entries
   - Adds id tag in toggl on sync
   - Puts id in custom_value1 in invoice ninja
+  - Puts worker name fro toggl in custom_value2 in invoice ninja
+- Updates task on sync
 - Use docker to run
+- Improved logging
+- Added deletion, and cleanup as functionality
    
  See `parameters.yaml.dist` or `php syncer sync:timings --help`
