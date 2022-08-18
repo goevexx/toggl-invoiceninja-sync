@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=0.0.4
+VERSION=0.0.5
 
 docker build -t goevexx/toggl-invoiceninja-sync:$VERSION .
 docker build -t goevexx/toggl-invoiceninja-sync:latest .

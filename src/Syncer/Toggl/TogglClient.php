@@ -134,7 +134,7 @@ class TogglClient
      * @param int   $deletePauseMikro    Mikrosecodns paused after delete execution
      * @return array|null
      **/
-    public function deleteTagsById(array $tagIds, int $deletePauseMikro = 250000): array|null
+    public function deleteTagsById(array $tagIds, int $deletePauseMikro = 250000): array
     {
         $deletedTags = [];
         foreach($tagIds as $tagId){

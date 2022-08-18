@@ -225,7 +225,7 @@ class Client
      * @param \DateTime $until 
      * @return string[]|null
      **/
-    public function deleteTasksBetween(\DateTime $since,\DateTime $until): array|null
+    public function deleteTasksBetween(\DateTime $since,\DateTime $until): array
     {
         $aDayInterval = new DateInterval('P1D');
 
