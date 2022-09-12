@@ -141,7 +141,8 @@ class SyncAnalyze extends Command
             $hasWarnings = $this->checkTimeEntryToTaskConsistency($workspace);
 
             if ($hasWarnings){
-                $this->io->caution($workspace . ' has erroneous data. Look up.');
+                $this->io->error($workspace . ' has erroneous data. Look up.');
+                return 1;
             } else {
                 $this->io->success($workspace . ' has no errors.');
             }
