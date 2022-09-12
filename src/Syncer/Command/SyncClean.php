@@ -1,4 +1,5 @@
-<?php declare(strict_types=1);
+<?php 
+declare(strict_types=1);
 
 namespace Syncer\Command;
 
@@ -20,7 +21,7 @@ use DateTime;
 use DateInterval;
 
 /**
- * Class SyncTimings
+ * Class SyncClean
  * @package Syncer\Command
  *
  * @author Nicolas Morawietz <nmorawietz@programmierschmiede.de>

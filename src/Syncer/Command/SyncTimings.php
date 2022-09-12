@@ -1,4 +1,5 @@
-<?php declare(strict_types=1);
+<?php
+declare(strict_types=1);
 
 namespace Syncer\Command;
 
@@ -36,6 +37,7 @@ define('TIMEZONE', 'Europe/Berlin');
  * @author Matthieu Calie <matthieu@calie.be>
  */
 class SyncTimings extends Command
+
 {
     /**
      * @var SymfonyStyle
@@ -82,7 +84,7 @@ class SyncTimings extends Command
     private $roundingMinutes = 0;
 
     /** @var bool $billableOnly Whether only billable entries should be logged */
-    private $billableOnly;  
+    private $billableOnly;
 
     /** @var \DateTime $since Since when time entries got to be synced */
     private $since;
@@ -108,7 +110,8 @@ class SyncTimings extends Command
         $users,
         $roundtimings,
         $billableOnly
-    ) {
+        )
+    {
         $this->togglClient = $togglClient;
         $this->reportsClient = $reportsClient;
         $this->users = $users;
@@ -120,9 +123,6 @@ class SyncTimings extends Command
 
         parent::__construct();
     }
-
-    // TODO: Add Logging
-    // TODO: Add task update sync
 
     /**
      * Configure the command
@@ -139,7 +139,7 @@ class SyncTimings extends Command
             ->addOption(OPTION_UNTIL, OPTION_UNTIL_SHORT, InputOption::VALUE_REQUIRED, 'Date to which timings get synced (including this day) (See https://www.php.net/manual/de/datetime.formats.date.php)', $dateNow->format(\DateTimeInterface::W3C))
             ->addOption(OPTION_ROUND, OPTION_ROUND_SHORT, InputOption::VALUE_OPTIONAL, 'Minutes a time log\'s duration is rounded to and the end time is be adaptet to')
             ->addOption(OPTION_BILLABLE, OPTION_BILLABLE_SHORT, InputOption::VALUE_OPTIONAL, 'Transfer only billable timelogs')
-        ;
+            ;
     }
 
     /**
@@ -148,7 +148,7 @@ class SyncTimings extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->io = new SymfonyStyle($input, $output);
-        
+
         $this->getOptions($input);
 
         $workspaces = $this->getWorkspacesOrExit();
@@ -164,13 +164,13 @@ class SyncTimings extends Command
             $this->io->note($workspace . 'Create new tasks...');
 
             // Create new tasks for not yet logged time entries
-            foreach($notLoggedTimeEntries as $timeEntry) {
+            foreach ($notLoggedTimeEntries as $timeEntry) {
                 $this->handleNewTimeEntry($timeEntry);
             }
 
             $this->io->note($workspace . 'Update existing tasks...');
             // Update already logged time entries
-            foreach($loggedTimeEntries as $timeEntry) {
+            foreach ($loggedTimeEntries as $timeEntry) {
                 $this->handleReferencedTimeEntry($timeEntry);
             }
         }
@@ -190,7 +190,7 @@ class SyncTimings extends Command
     {
         $syncedTask = $this->syncTask($timeEntry);
 
-        if(!isset($syncedTask)){
+        if (!isset($syncedTask)) {
             $this->io->error('Error updating Task from TimeEntry. ' . $timeEntry);
         }
     }
@@ -205,8 +205,8 @@ class SyncTimings extends Command
      **/
     public function handleNewTimeEntry(TimeEntry $timeEntry)
     {
-        if(!$this->billableOnly | ($this->billableOnly && $timeEntry->isBillable())){
-            $clientExists =$this->doesConfigKeyExist($this->clients, $timeEntry->getClient());
+        if (!$this->billableOnly | ($this->billableOnly && $timeEntry->isBillable())) {
+            $clientExists = $this->doesConfigKeyExist($this->clients, $timeEntry->getClient());
             $projectExists = $this->doesConfigKeyExist($this->projects, $timeEntry->getProject());
             $userExists = $this->doesConfigKeyExist($this->users, $timeEntry->getUser());
 
@@ -216,12 +216,14 @@ class SyncTimings extends Command
 
                 $createdTask = $this->logTask($timeEntry);
 
-                if(isset($createdTask)){
+                if (isset($createdTask)) {
                     $this->io->success('Task successfully sent to InvoiceNinja. ' . $createdTask);
-                } else {
+                }
+                else {
                     $this->io->error('Error creating Task from TimeEntry. ' . $timeEntry);
                 }
-            } else {
+            }
+            else {
                 $this->io->error('Couldn\'t create Task from TimeEntry.' . $timeEntry);
                 $this->io->error('At least one of either clients, projects or users in your config doesn\'t exist');
             }
@@ -239,15 +241,17 @@ class SyncTimings extends Command
     private static function getTaskIdFromTimeEntry(TimeEntry $timeEntry)
     {
         $invoiceNinjaTaskTags = preg_grep(InvoiceNinjaClient::getTaskRefLabelRegexp(), $timeEntry->getTags());
-        if(count($invoiceNinjaTaskTags) > 1){
-            throw new \Exception('Time Entry has multiple Task IDs. ' .$timeEntry);
-        } else if (count($invoiceNinjaTaskTags) == 1){
+        if (count($invoiceNinjaTaskTags) > 1) {
+            throw new \Exception('Time Entry has multiple Task IDs. ' . $timeEntry);
+        }
+        else if (count($invoiceNinjaTaskTags) == 1) {
             $invoiceNinjaTaskTag = $invoiceNinjaTaskTags[0];
-            preg_match(InvoiceNinjaClient::getTaskRefLabelRegexp(), $invoiceNinjaTaskTag, 
-            $invoiceNinjaTaskIdMatch);
+            preg_match(InvoiceNinjaClient::getTaskRefLabelRegexp(), $invoiceNinjaTaskTag,
+                $invoiceNinjaTaskIdMatch);
             $invoiceNinjaTaskId = $invoiceNinjaTaskIdMatch[1];
             return $invoiceNinjaTaskId;
-        } else {
+        }
+        else {
             return "";
         }
     }
@@ -258,9 +262,10 @@ class SyncTimings extends Command
      * @param TimeEntry $entry
      * @return bool
      **/
-    static function notLoggedYetFilter(TimeEntry $entry): bool {
+    static function notLoggedYetFilter(TimeEntry $entry): bool
+    {
         $invoiceNinjaTaskTags = SyncTimings::getTaskIdFromTimeEntry($entry);
-        if(strlen($invoiceNinjaTaskTags) > 0){
+        if (strlen($invoiceNinjaTaskTags) > 0) {
             return false;
         }
         return true;
@@ -272,9 +277,10 @@ class SyncTimings extends Command
      * @param TimeEntry $entry
      * @return bool
      **/
-    static function loggedYetFilter(TimeEntry $entry){
+    static function loggedYetFilter(TimeEntry $entry)
+    {
         $invoiceNinjaTaskTags = SyncTimings::getTaskIdFromTimeEntry($entry);
-        if(strlen($invoiceNinjaTaskTags) > 0){
+        if (strlen($invoiceNinjaTaskTags) > 0) {
             return true;
         }
         return false;
@@ -290,34 +296,15 @@ class SyncTimings extends Command
      **/
     public function filterLoggedTimeEntries(array $entries, bool $logged = true): array
     {
-        if($logged){
-            $filteredEntries = array_filter($entries, array(SyncTimings::class, 'loggedYetFilter'));
-        } else {
-            $filteredEntries = array_filter($entries, array(SyncTimings::class, 'notLoggedYetFilter'));
+        if ($logged) {
+            $filteredEntries = array_filter($entries, array(SyncTimings::class , 'loggedYetFilter'));
+        }
+        else {
+            $filteredEntries = array_filter($entries, array(SyncTimings::class , 'notLoggedYetFilter'));
         }
 
         return $filteredEntries;
     }
-
-    /**
-     * Filters not yet logged time entries
-     *
-     * Searches time entry's tags for invoice ninja task id 
-     *
-     * @param TimeEntry[] $entries 
-     * @return TimeEntry[]
-     **/
-    // public function filterNotYetLoggedTimeEntries(array $entries): array
-    // {
-    //     $filteredEntries = array_filter($entries, function(TimeEntry $entry){
-    //         $invoiceNinjaTaskTags = preg_grep(InvoiceNinjaClient::getTaskRefLabelRegexp(), $entry->getTags());
-    //         if(count($invoiceNinjaTaskTags) > 0){
-    //             return false;
-    //         }
-    //         return true;
-    //     });
-    //     return $filteredEntries;
-    // }
 
     /**
      * Gets workspaces or else exits
@@ -348,24 +335,24 @@ class SyncTimings extends Command
         $timezone = new DateTimeZone(TIMEZONE);
 
         $sinceOption = $input->getOption('since');
-        if(isset($sinceOption) && $sinceTime = new DateTime($sinceOption, $timezone)){
+        if (isset($sinceOption) && $sinceTime = new DateTime($sinceOption, $timezone)) {
             $this->since = $sinceTime;
         }
 
         $untilOption = $input->getOption('until');
-        if(isset($untilOption) && $untilTime = new DateTime($untilOption, $timezone)){
+        if (isset($untilOption) && $untilTime = new DateTime($untilOption, $timezone)) {
             $this->until = $untilTime;
-        } 
+        }
 
         $roundOption = $input->getOption('round');
-        if(isset($roundOption) && is_int($roundOption)){
+        if (isset($roundOption) && is_int($roundOption)) {
             $this->roundingMinutes = $roundOption;
-        } 
+        }
 
         $billOption = $input->getOption('billable-only');
-        if(isset($billOption)){
+        if (isset($billOption)) {
             $this->billableOnly = $billOption;
-        } 
+        }
     }
 
     /**
@@ -409,12 +396,12 @@ class SyncTimings extends Command
         $taskFromTimeEntry = $this->timeEntryToTask($timeEntry, $taskId);
 
         $taskChanged = !$task->equals($taskFromTimeEntry, ['number']);
-        
-        if ($taskChanged){
-            $this->io->comment('Task has changes. ' . $task . '!=' . $taskFromTimeEntry) ;
+
+        if ($taskChanged) {
+            $this->io->comment('Task has changes. ' . $task . '!=' . $taskFromTimeEntry);
             $newTask = $this->invoiceNinjaClient->updateTask($taskFromTimeEntry);
 
-            if(isset($newTask)){
+            if (isset($newTask)) {
                 $this->io->success('Task successfully updated. ' . $newTask);
                 return $newTask;
             }
@@ -455,7 +442,7 @@ class SyncTimings extends Command
     {
         $task = new Task();
 
-        if(isset($taskId)){
+        if (isset($taskId)) {
             $task->setId($taskId);
         }
 
@@ -506,9 +493,9 @@ class SyncTimings extends Command
         $end = $this->maybeExtendDuration($start, $entry->getEnd());
 
         $timeLog = [[
-            $start->getTimestamp(),
-            $end->getTimestamp(),
-        ]];
+                $start->getTimestamp(),
+                $end->getTimestamp(),
+            ]];
 
         return \GuzzleHttp\json_encode($timeLog);
     }
@@ -526,8 +513,8 @@ class SyncTimings extends Command
     private function maybeExtendDuration(DateTime $start, DateTime $end): DateTime
     {
         $startClone = clone $start;
-        $duration  = $startClone->diff($end);
-        if ($this->roundingMinutes !== 0){
+        $duration = $startClone->diff($end);
+        if ($this->roundingMinutes !== 0) {
             $duration = SyncTimings::roundDateIntervalMinutes($duration, $this->roundingMinutes);
         }
         return $startClone->add($duration);
@@ -542,46 +529,46 @@ class SyncTimings extends Command
      **/
     private static function roundDateIntervalMinutes(DateInterval $interval, int $roundToMinutes): DateInterval
     {
-            // Take date parts off duration
-            $partialDaysStr = $interval->format('%d');
-            $partialHoursStr = $interval->format('%h');
-            $partialMinutesStr = $interval->format('%i');
+        // Take date parts off duration
+        $partialDaysStr = $interval->format('%d');
+        $partialHoursStr = $interval->format('%h');
+        $partialMinutesStr = $interval->format('%i');
 
-            $partialDays = intval($partialDaysStr);
-            $partialHours =   intval($partialHoursStr);
-            $partialMinutes = intval($partialMinutesStr);
+        $partialDays = intval($partialDaysStr);
+        $partialHours = intval($partialHoursStr);
+        $partialMinutes = intval($partialMinutesStr);
 
-            // If the interval contains no days, hours or minutes
-            // then it will be counted as one rounding
-            if($partialDays == 0 
-            && $partialHours == 0 
-            && $partialMinutes == 0){
-                return new DateInterval('PT'.$roundToMinutes.'M');
-            } 
+        // If the interval contains no days, hours or minutes
+        // then it will be counted as one rounding
+        if ($partialDays == 0
+        && $partialHours == 0
+        && $partialMinutes == 0) {
+            return new DateInterval('PT' . $roundToMinutes . 'M');
+        }
 
-            // Round minutes
-            $minutes = $partialDays * 24 * 60 + $partialHours * 60 + $partialMinutes;
-            $roundedMinutes = ceil($minutes / $roundToMinutes) * $roundToMinutes;
+        // Round minutes
+        $minutes = $partialDays * 24 * 60 + $partialHours * 60 + $partialMinutes;
+        $roundedMinutes = ceil($minutes / $roundToMinutes) * $roundToMinutes;
 
-            // Create date parts from rounded minutes
-            $roundedPartialDays = floor($roundedMinutes / 60 / 24);
-            $roundedMinutesWithoutRoundedPartialDays = $roundedMinutes - ($roundedPartialDays * 24 * 60);
-            $roundedPartialHours = floor(($roundedMinutesWithoutRoundedPartialDays) / 60);
-            $roundedPartialMinutes = $roundedMinutes - ($roundedPartialHours * 60);
+        // Create date parts from rounded minutes
+        $roundedPartialDays = floor($roundedMinutes / 60 / 24);
+        $roundedMinutesWithoutRoundedPartialDays = $roundedMinutes - ($roundedPartialDays * 24 * 60);
+        $roundedPartialHours = floor(($roundedMinutesWithoutRoundedPartialDays) / 60);
+        $roundedPartialMinutes = $roundedMinutes - ($roundedPartialHours * 60);
 
-            // Merge date parts
-            $intervalFormat = 'PT';
-            if($roundedPartialDays != 0){
-                $intervalFormat .= $roundedPartialDays.'D';
-            }
-            if($roundedPartialHours != 0){
-                $intervalFormat .= $roundedPartialHours.'H';
-            }
-            if($roundedPartialMinutes != 0){
-                $intervalFormat .= $roundedPartialMinutes.'M';
-            }
-            $roundedDuration = new DateInterval($intervalFormat);
+        // Merge date parts
+        $intervalFormat = 'PT';
+        if ($roundedPartialDays != 0) {
+            $intervalFormat .= $roundedPartialDays . 'D';
+        }
+        if ($roundedPartialHours != 0) {
+            $intervalFormat .= $roundedPartialHours . 'H';
+        }
+        if ($roundedPartialMinutes != 0) {
+            $intervalFormat .= $roundedPartialMinutes . 'M';
+        }
+        $roundedDuration = new DateInterval($intervalFormat);
 
-            return $roundedDuration;
+        return $roundedDuration;
     }
 }

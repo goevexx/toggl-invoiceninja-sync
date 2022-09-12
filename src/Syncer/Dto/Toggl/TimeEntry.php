@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Syncer\Dto\Toggl;
 
@@ -121,9 +123,9 @@ class TimeEntry
     {
         return 'TimeEntry {'
             . 'ID: ' . $this->getId() . ', '
-            . 'Description: ' . $this->getDescription() . ', '  
-            . 'Project: ' . $this->getProject()  . ', '
-            . 'Time: ' . $this->getStart()->format('D d.M / d.m.Y H:i:s') . ' - ' . $this->getEnd()->format('D d.M / d.m.Y H:i:s') 
+            . 'Description: ' . $this->description . ', '
+            . 'Project: ' . $this->project . ', '
+            . 'Time: ' . $this->start->format('D d.M / d.m.Y H:i:s') . ' - ' . $this->getEnd()->format('D d.M / d.m.Y H:i:s')
             . '}';
     }
 
