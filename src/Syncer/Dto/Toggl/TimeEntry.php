@@ -33,6 +33,11 @@ class TimeEntry
     private $uid;
 
     /**
+     * @var integer
+     */
+    private $wid;
+
+    /**
      * @var string
      */
     private $description;
@@ -191,6 +196,22 @@ class TimeEntry
     public function setUid(int $uid)
     {
         $this->uid = $uid;
+    }
+
+    /**
+     * @return int
+     */
+    public function getWid(): int
+    {
+        return $this->wid;
+    }
+
+    /**
+     * @param int $wid
+     */
+    public function setWid(int $wid)
+    {
+        $this->wid = $wid;
     }
 
     /**

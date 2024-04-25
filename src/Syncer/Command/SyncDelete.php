@@ -181,12 +181,12 @@ class SyncDelete extends Command
 
             // Get tag ids from name matching tags
             $allTags = $this->togglClient->getAllTags($workspace->getId());
-            $tagIdsToBeDeleted = [];
+            $tagsToBeDeleted = [];
             foreach ($allTags as $tag) {
                 $tagName = $tag->getName();
                 if (in_array($tagName, $taskTagNames)) {
                     $taskTagNamesKey = array_search($tagName, $taskTagNames);
-                    array_push($tagIdsToBeDeleted, $tag->getId());
+                    array_push($tagsToBeDeleted, $tag);
                     unset($taskTagNames[$taskTagNamesKey]);
                 } 
             }
@@ -195,7 +195,7 @@ class SyncDelete extends Command
             }
 
             // Delete tags
-            $deletedTagIds = $this->togglClient->deleteTagsById($tagIdsToBeDeleted);
+            $deletedTagIds = $this->togglClient->deleteTags($tagsToBeDeleted);
 
             if(!isset($deletedTagIds)){
                 $this->io->error($workspace . 'Error deleting tags.');

@@ -3,22 +3,16 @@ declare(strict_types=1);
 
 namespace Syncer\Command;
 
-use Syncer\Dto\InvoiceNinja\Task;
-use Syncer\Dto\Toggl\TimeEntry;
 use Syncer\InvoiceNinja\Client as InvoiceNinjaClient;
 use Syncer\Toggl\ReportsClient;
 use Syncer\Toggl\TogglClient;
+use \Syncer\Dto\Toggl\Tag;
+use \Syncer\Dto\Toggl\Workspace;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use \Syncer\Dto\Toggl\Workspace;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
-use DateTimeZone;
-use DateTime;
-use DateInterval;
 
 /**
  * Class SyncClean
@@ -107,10 +101,10 @@ class SyncClean extends Command
         $workspaces = $this->getWorkspacesOrExit();
         foreach ($workspaces as $workspace) {
             // Get tags which dont have a task counterpart
-            $tagIdsToBeDeleted = $this->getTagNotFoundInTaskIds($workspace);
+            $tagsToBeDeleted = $this->getTagsNotFoundInTasks($workspace);
             
             // Delete tags
-            $this->handleDeleteTags($workspace, $tagIdsToBeDeleted);
+            $this->handleDeleteTags($workspace, $tagsToBeDeleted);
         }
 
         $this->io->note('Cleaning up finished.');
@@ -122,11 +116,11 @@ class SyncClean extends Command
      * Handles tag deletion
      *
      * @param Workspace $workspace
-     * @param string[] $tagIdsToBeDeleted
+     * @param array<Tag> $tagsToBeDeleted
      **/
-    public function handleDeleteTags(Workspace $workspace, array $tagIdsToBeDeleted)
+    public function handleDeleteTags(Workspace $workspace, array $tagsToBeDeleted)
     {
-        $deltedTagIds = $this->togglClient->deleteTagsById($tagIdsToBeDeleted);
+        $deltedTagIds = $this->togglClient->deleteTags($tagsToBeDeleted);
 
         if(count($deltedTagIds) == 0){
             $this->io->success($workspace . 'No tags deleted');
@@ -139,26 +133,26 @@ class SyncClean extends Command
      * Returns those tag ids, which do not belong to a task
      *
      * @param Workspace $workspace
-     * @return string[]
+     * @return array<Tag>
      **/
-    public function getTagNotFoundInTaskIds(Workspace $workspace): array
+    public function getTagsNotFoundInTasks(Workspace $workspace): array
     {
         // Get all tags
         $allTags = $this->togglClient->getAllTags($workspace->getId());
 
         // Add tag to be deleted when corresponding task cannot be found or is deleted
-        $tagIdsToBeDeleted = [];
+        $tagsToBeDeleted = [];
         foreach ($allTags as $tag) {
             $taskRefMatchedCount = preg_match_all(InvoiceNinjaClient::getTaskRefLabelRegexp(), $tag->getName(), $taskRefMatch);
             if ($taskRefMatchedCount == 1) {
                 $taskId = $taskRefMatch[1][0];
                 $task = $this->invoiceNinjaClient->getTask($taskId);
                 if (!isset($task) || $task->getDeleted()) {
-                    array_push($tagIdsToBeDeleted, $tag->getId());
+                    array_push($tagsToBeDeleted, $tag);
                 }
             }
         }
 
-        return $tagIdsToBeDeleted;
+        return $tagsToBeDeleted;
     }
 }

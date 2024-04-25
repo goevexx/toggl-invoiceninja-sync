@@ -8,7 +8,6 @@ use JMS\Serializer\SerializerInterface;
 use Syncer\Dto\Toggl\Workspace;
 use Syncer\Dto\Toggl\TimeEntry;
 use Syncer\Dto\Toggl\PutTimeEntryResponse;
-use Syncer\Dto\Toggl\GetTagsResponse;
 use Syncer\Dto\Toggl\Tag;
 use PhpSpec\Exception\Exception;
 
@@ -20,7 +19,7 @@ use PhpSpec\Exception\Exception;
  */
 class TogglClient
 {
-    const VERSION = 'v8';
+    const VERSION = 'v9';
 
     /**
      * @var Client;
@@ -75,7 +74,7 @@ class TogglClient
     {
         $data = $this->serializer->serialize($entry, 'json');
         
-        $response = $this->client->request('PUT', self::VERSION . '/time_entries/' . $entry->getId(), [
+        $response = $this->client->request('PUT', self::VERSION . '/workspaces/' . $entry->getWid() . '/time_entries/' . $entry->getId(), [
             'auth' => [$this->api_key, 'api_token'],
             'body' => '{"time_entry": ' . $data . '}'
         ]);
@@ -89,12 +88,12 @@ class TogglClient
     /**
      * Deletes a tag in toggl
      *
-     * @param int $tagId
+     * @param Tag $tag
      * @return bool
      **/
-    public function deleteTag(int $tagId): bool
+    public function deleteTag(Tag $tag): bool
     {
-        $response = $this->client->request('DELETE', self::VERSION . '/tags/' . $tagId, [
+        $response = $this->client->request('DELETE', self::VERSION . '/workspaces/' . $tag->getWorkspaceId() . '/tags/' . $tag->getId(), [
             'auth' => [$this->api_key, 'api_token'],
         ]);
 
@@ -114,7 +113,7 @@ class TogglClient
         ]);
 
         if($response->getStatusCode()<>200){
-            throw new Exception('Get Tags StatusCode = ' . $response->getStatusCode());
+            throw new \Exception('Get Tags StatusCode = ' . $response->getStatusCode());
         }
 
         try {
@@ -131,22 +130,22 @@ class TogglClient
     /**
      * Deletes bulk of tags by id
      *
-     * @param string[] $tagIds 
+     * @param array<Tag> $tags 
      * @param int   $deletePauseMikro    Mikrosecodns paused after delete execution
      * @return array|null
      **/
-    public function deleteTagsById(array $tagIds, int $deletePauseMikro = 250000): array
+    public function deleteTags(array $tags, int $deletePauseMikro = 250000): array|null
     {
-        $deletedTags = [];
-        foreach($tagIds as $tagId){
-            if (!$this->deleteTag($tagId)){
+        $deletedTagIds = [];
+        foreach($tags as $tag){
+            if (!$this->deleteTag($tag)){
                 return null;
             } else {
-                array_push($deletedTags, $tagId);
+                array_push($deletedTagIds, $tag->getId());
             }
             usleep($deletePauseMikro);
         }
 
-        return $deletedTags;
+        return $deletedTagIds;
     }
 }

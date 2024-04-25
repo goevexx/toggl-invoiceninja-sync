@@ -13,6 +13,9 @@ Syncer\Dto\Toggl\TimeEntry:
         uid:
             type: integer
             exclude: false
+        wid:
+            type: integer
+            exclude: false
         description:
             type: string
             exclude: false
