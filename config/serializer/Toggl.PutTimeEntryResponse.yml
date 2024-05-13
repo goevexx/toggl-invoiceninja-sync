@@ -1,7 +1,0 @@
-Syncer\Dto\Toggl\PutTimeEntryResponse:
-    exclusion_policy: ALL
-    properties:
-        data:
-            type: Syncer\Dto\Toggl\TimeEntry
-            serialized_name: data
-            exclude: false

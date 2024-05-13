@@ -120,7 +120,7 @@ class SyncClean extends Command
      **/
     public function handleDeleteTags(Workspace $workspace, array $tagsToBeDeleted)
     {
-        $deltedTagIds = $this->togglClient->deleteTags($tagsToBeDeleted);
+        $deltedTagIds = $this->togglClient->deleteTags($workspace->getId(), $tagsToBeDeleted);
 
         if(count($deltedTagIds) == 0){
             $this->io->success($workspace . 'No tags deleted');

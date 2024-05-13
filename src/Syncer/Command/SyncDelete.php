@@ -195,7 +195,7 @@ class SyncDelete extends Command
             }
 
             // Delete tags
-            $deletedTagIds = $this->togglClient->deleteTags($tagsToBeDeleted);
+            $deletedTagIds = $this->togglClient->deleteTags($workspace->getId(), $tagsToBeDeleted);
 
             if(!isset($deletedTagIds)){
                 $this->io->error($workspace . 'Error deleting tags.');

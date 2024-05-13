@@ -5,6 +5,7 @@ namespace Syncer\Command;
 
 use Syncer\Dto\InvoiceNinja\Task;
 use Syncer\Dto\Toggl\TimeEntry;
+use Syncer\Dto\Toggl\Workspace;
 use Syncer\InvoiceNinja\Client as InvoiceNinjaClient;
 use Syncer\Toggl\ReportsClient;
 use Syncer\Toggl\TogglClient;
@@ -165,7 +166,7 @@ class SyncTimings extends Command
 
             // Create new tasks for not yet logged time entries
             foreach ($notLoggedTimeEntries as $timeEntry) {
-                $this->handleNewTimeEntry($timeEntry);
+                $this->handleNewTimeEntry($workspace, $timeEntry);
             }
 
             $this->io->note($workspace . 'Update existing tasks...');
@@ -201,9 +202,10 @@ class SyncTimings extends Command
      *
      * Creates task when user, client and project exists and references the new task to the time entry
      *
+     * @param \Syncer\Dto\Toggl\Workspace $workspace 
      * @param TimeEntry $timeEntry 
      **/
-    public function handleNewTimeEntry(TimeEntry $timeEntry)
+    public function handleNewTimeEntry(Workspace $workspace,TimeEntry $timeEntry)
     {
         if (!$this->billableOnly | ($this->billableOnly && $timeEntry->isBillable())) {
             $clientExists = $this->doesConfigKeyExist($this->clients, $timeEntry->getClient());
@@ -214,7 +216,7 @@ class SyncTimings extends Command
             if ($clientExists && $projectExists && $userExists) {
                 $this->io->comment('New time entry.' . $timeEntry);
 
-                $createdTask = $this->logTask($timeEntry);
+                $createdTask = $this->logTask($workspace, $timeEntry);
 
                 if (isset($createdTask)) {
                     $this->io->success('Task successfully sent to InvoiceNinja. ' . $createdTask);
@@ -370,13 +372,14 @@ class SyncTimings extends Command
     /**
      * Logs task and refs time entry
      * 
+     * @param \Syncer\Dto\Toggl\Workspace $workspace 
      * @param TimeEntry $entry
      * @return Task
      */
-    private function logTask(TimeEntry $entry): Task
+    private function logTask(Workspace $workspace, TimeEntry $entry): Task
     {
         $task = $this->createTask($entry);
-        $this->refTimeEntry($entry, $task);
+        $this->refTimeEntry($workspace, $entry, $task);
         return $task;
     }
 
@@ -415,12 +418,13 @@ class SyncTimings extends Command
      *
      * Adds Task to time entry with given task id
      *
+     * @param \Syncer\Dto\Toggl\Workspace $workspace 
      * @param TimeEntry $entry
      * @param Task $task
      * 
      * @return TimeEntry
      **/
-    public function refTimeEntry(TimeEntry $entry, Task $task): TimeEntry
+    public function refTimeEntry(Workspace $workspace, TimeEntry $entry, Task $task): TimeEntry
     {
         $tags = $entry->getTags();
         array_push($tags, InvoiceNinjaClient::createTaskRefLabel($task->getId()));
@@ -428,7 +432,7 @@ class SyncTimings extends Command
         $newEntry->setId($entry->getId());
         $newEntry->setTags($tags);
 
-        return $this->togglClient->updateTimeEntry($newEntry);
+        return $this->togglClient->updateTimeEntry($workspace->getId(), $newEntry);
     }
 
     /**

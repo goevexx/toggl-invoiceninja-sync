@@ -80,7 +80,7 @@ class ReportsClient
      * Collects all TimeEntries from DetailedReports between the given timespan.
      * To achieve this all pages from the report need to be requested.
      *
-     * @param String $workspaceId
+     * @param int $workspaceId
      * @param DateTime $since
      * @param DateTime $until
      * @return \Syncer\Dto\Toggl\TimeEntry[]

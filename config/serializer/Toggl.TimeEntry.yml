@@ -13,9 +13,10 @@ Syncer\Dto\Toggl\TimeEntry:
         uid:
             type: integer
             exclude: false
-        wid:
+        workspaceId:
             type: integer
             exclude: false
+            serialized_name: workspace_id
         description:
             type: string
             exclude: false

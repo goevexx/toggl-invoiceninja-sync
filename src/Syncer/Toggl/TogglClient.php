@@ -7,7 +7,6 @@ use GuzzleHttp\Client;
 use JMS\Serializer\SerializerInterface;
 use Syncer\Dto\Toggl\Workspace;
 use Syncer\Dto\Toggl\TimeEntry;
-use Syncer\Dto\Toggl\PutTimeEntryResponse;
 use Syncer\Dto\Toggl\Tag;
 use PhpSpec\Exception\Exception;
 
@@ -68,19 +67,20 @@ class TogglClient
      *
      *
      * @param TimeEntry $entry 
+     * @param int $workspaceId 
      * @return TimeEntry
      **/
-    public function updateTimeEntry(TimeEntry $entry): TimeEntry
+    public function updateTimeEntry(int $workspaceId, TimeEntry $entry): TimeEntry
     {
         $data = $this->serializer->serialize($entry, 'json');
         
-        $response = $this->client->request('PUT', self::VERSION . '/workspaces/' . $entry->getWid() . '/time_entries/' . $entry->getId(), [
+        $response = $this->client->request('PUT', self::VERSION . '/workspaces/' . $workspaceId . '/time_entries/' . $entry->getId(), [
             'auth' => [$this->api_key, 'api_token'],
-            'body' => '{"time_entry": ' . $data . '}'
+            'body' =>  $data 
         ]);
 
-        $putTimeEntryResponse = $this->serializer->deserialize($response->getBody(), PutTimeEntryResponse::class, 'json');
-        return $putTimeEntryResponse->getData();
+        $resultTimeEntry = $this->serializer->deserialize($response->getBody(), TimeEntry::class, 'json');
+        return $resultTimeEntry;
     
     }
 
@@ -91,9 +91,9 @@ class TogglClient
      * @param Tag $tag
      * @return bool
      **/
-    public function deleteTag(Tag $tag): bool
+    public function deleteTag(int $workspaceId, Tag $tag): bool
     {
-        $response = $this->client->request('DELETE', self::VERSION . '/workspaces/' . $tag->getWorkspaceId() . '/tags/' . $tag->getId(), [
+        $response = $this->client->request('DELETE', self::VERSION . '/workspaces/' . $workspaceId . '/tags/' . $tag->getId(), [
             'auth' => [$this->api_key, 'api_token'],
         ]);
 
@@ -134,11 +134,11 @@ class TogglClient
      * @param int   $deletePauseMikro    Mikrosecodns paused after delete execution
      * @return array|null
      **/
-    public function deleteTags(array $tags, int $deletePauseMikro = 250000): array|null
+    public function deleteTags(int $workspaceId, array $tags, int $deletePauseMikro = 250000)
     {
         $deletedTagIds = [];
         foreach($tags as $tag){
-            if (!$this->deleteTag($tag)){
+            if (!$this->deleteTag($workspaceId,$tag)){
                 return null;
             } else {
                 array_push($deletedTagIds, $tag->getId());
